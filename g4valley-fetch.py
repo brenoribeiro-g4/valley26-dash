@@ -229,6 +229,59 @@ def fetch_marketing_totals():
     return run_query(sql)
 
 
+def fetch_ads_report():
+    """Full ads report: metrics from marketing_fct + sales from orders via utm_content match."""
+    sql = f"""
+    WITH ads_metrics AS (
+        SELECT
+            a.ad_name,
+            LEFT(m.utm_campaign, 100) as campaign,
+            m.adset_id,
+            m.ad_id,
+            ROUND(SUM(CASE WHEN m.event='investimento' THEN m.event_value ELSE 0 END), 2) as invest,
+            ROUND(SUM(CASE WHEN m.event='clicks' THEN m.event_value ELSE 0 END), 0) as clicks,
+            ROUND(SUM(CASE WHEN m.event='impressoes' THEN m.event_value ELSE 0 END), 0) as impressoes,
+            ROUND(SUM(CASE WHEN m.event='reach' THEN m.event_value ELSE 0 END), 0) as reach
+        FROM production.gold.marketing_fct m
+        LEFT JOIN production.gold.ads_details a ON m.ad_id = a.ad_id
+        WHERE LOWER(m.utm_campaign) LIKE '%_adsfb_gtm_g4valley26_vendas_carrinhoaberto_alwayson%'
+          AND m.event_at >= '{LOTE_START}'
+          AND m.event_at <= '{LOTE_END}'
+        GROUP BY 1, 2, 3, 4
+    ),
+    vendas AS (
+        SELECT
+            LOWER(utm_content) as ad_lower,
+            COUNT(*) as vendas,
+            ROUND(SUM(vl_venda), 2) as fat
+        FROM g4_eventos_lancamentos.vw_mart_eventos_orders
+        WHERE edicao_do_evento = '{EDITION}'
+          AND dt_event >= '{LOTE_START}'
+          AND dt_event <= '{LOTE_END}'
+          AND utm_source = 'facebook'
+        GROUP BY 1
+    )
+    SELECT
+        am.ad_name,
+        am.campaign,
+        am.adset_id,
+        am.ad_id,
+        am.invest,
+        am.clicks,
+        am.impressoes,
+        ROUND(am.clicks / NULLIF(am.impressoes, 0) * 100, 2) as ctr,
+        COALESCE(v.vendas, 0) as vendas,
+        COALESCE(v.fat, 0) as fat,
+        CASE WHEN COALESCE(v.vendas,0) > 0 THEN ROUND(am.invest / v.vendas, 2) ELSE 0 END as cpa,
+        CASE WHEN am.invest > 0 THEN ROUND(COALESCE(v.fat,0) / am.invest, 2) ELSE 0 END as roas
+    FROM ads_metrics am
+    LEFT JOIN vendas v ON v.ad_lower = LOWER(am.ad_name)
+    ORDER BY am.invest DESC
+    LIMIT 100
+    """
+    return run_query(sql)
+
+
 def fetch_meta_ads_vendas():
     """Meta Ads vendas: source=facebook + specific campaigns only."""
     sql = f"""
@@ -398,6 +451,27 @@ def build_json():
             by_day[dia] = {"fat": 0, "vendas": 0, "bruto": 0, "invest": round(inv, 2)}
 
     # 7. Leads
+    # 8. Ads Report (Page 3)
+    print("  -> ads report (campaigns x vendas)...")
+    ads_raw = fetch_ads_report()
+    ads_report = []
+    for row in ads_raw:
+        ads_report.append({
+            "ad_name": row[0] or "",
+            "campaign": row[1] or "",
+            "adset_id": row[2] or "",
+            "ad_id": row[3] or "",
+            "invest": float(row[4] or 0),
+            "clicks": int(float(row[5] or 0)),
+            "impressoes": int(float(row[6] or 0)),
+            "ctr": float(row[7] or 0),
+            "vendas": int(row[8] or 0),
+            "fat": float(row[9] or 0),
+            "cpa": float(row[10] or 0),
+            "roas": float(row[11] or 0)
+        })
+
+    # 9. Leads
     print("  -> leads totais + por dia + por canal...")
     leads_total = int(fetch_leads_totais()[0][0])
     leads_by_day_raw = fetch_leads_by_day()
@@ -483,6 +557,7 @@ def build_json():
         "perf": perf,
         "perf_canal": perf_canal,
         "mkt_by_canal": {k: {kk: round(vv, 2) for kk, vv in v.items()} for k, v in mkt_by_canal.items()},
+        "ads_report": ads_report,
         "raw_rows": []
     }
 
