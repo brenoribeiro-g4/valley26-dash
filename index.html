@@ -343,10 +343,10 @@ td:first-child { text-align: left; }
         <div class="pace-scale num"><span>R$ 0</span><span id="kpi-meta-fat">R$ 1M</span></div>
       </div>
       <div class="hero-card">
-        <div class="hero-label">CPA Geral</div>
-        <div class="hero-value md num" id="kpi-cpa-geral"><div class="skeleton" style="height:28px"></div></div>
-        <div class="hero-context" id="kpi-cpa-geral-sub">investimento ÷ vendas</div>
-        <div class="hero-context num" id="kpi-roas-geral-sub" style="margin-top:auto;padding-top:10px;border-top:1px solid var(--border-soft)">—</div>
+        <div class="hero-label">ROAS Geral</div>
+        <div class="hero-value md num" id="kpi-roas-hero"><div class="skeleton" style="height:28px"></div></div>
+        <div class="hero-context" id="kpi-roas-hero-sub">faturamento ÷ investimento</div>
+        <div class="hero-context num" id="kpi-cpa-hero-sub" style="margin-top:auto;padding-top:10px;border-top:1px solid var(--border-soft)">—</div>
       </div>
       <div class="hero-card" style="align-items:center;text-align:center;justify-content:center">
         <div class="hero-label">Dias Restantes</div>
@@ -393,9 +393,9 @@ td:first-child { text-align: left; }
         <div class="k-sub">faturamento ÷ vendas</div>
       </div>
       <div class="kpi-cell">
-        <div class="k-label">ROAS Geral</div>
-        <div class="k-value" id="kpi-roas">—</div>
-        <div class="k-sub">alvo ≥ 3,00×</div>
+        <div class="k-label">CPA Geral</div>
+        <div class="k-value" id="kpi-cpa-strip">—</div>
+        <div class="k-sub">investimento ÷ vendas</div>
       </div>
     </div>
 
@@ -1129,9 +1129,12 @@ function updateKPIs() {
   const totalVendas = DATA.total_vendas || 0;
   const cpaGeral = totalVendas > 0 ? totalInvest / totalVendas : 0;
   const roasGeral = totalInvest > 0 ? totalFat / totalInvest : 0;
-  document.getElementById('kpi-cpa-geral').textContent = cpaGeral > 0 ? fmtR(cpaGeral) : '—';
-  document.getElementById('kpi-cpa-geral-sub').textContent = totalInvest > 0 ? `invest R$ ${fmtR(totalInvest)} ÷ ${totalVendas} vendas` : 'sem dados de invest.';
-  document.getElementById('kpi-roas-geral-sub').innerHTML = roasGeral > 0 ? `ROAS Geral <strong>${roasGeral.toFixed(2)}×</strong>` : '—';
+  // ROAS no hero (destaque)
+  document.getElementById('kpi-roas-hero').textContent = roasGeral > 0 ? roasGeral.toFixed(2) + '×' : '—';
+  document.getElementById('kpi-roas-hero-sub').textContent = totalInvest > 0 ? `R$ ${fmtR(totalFat)} ÷ R$ ${fmtR(totalInvest)}` : 'sem dados de invest.';
+  document.getElementById('kpi-cpa-hero-sub').innerHTML = cpaGeral > 0 ? `CPA Geral <strong>${fmtR(cpaGeral)}</strong>` : '—';
+  // CPA na strip
+  document.getElementById('kpi-cpa-strip').textContent = cpaGeral > 0 ? fmtR(cpaGeral) : '—';
 
   // ── Investimento Geral (substituiu Meta Acumulada)
   document.getElementById('kpi-invest-geral').textContent = totalInvest > 0 ? fmtR(totalInvest) : '—';
@@ -1175,10 +1178,10 @@ function updateKPIs() {
 
   document.getElementById('kpi-vendas').textContent = fmt(DATA.total_vendas);
   document.getElementById('kpi-ticket').textContent = fmtR(DATA.ticket_medio);
+  // ROAS color no hero
   const roasG = DATA.perf?.geral?.roas || 0;
-  const roasEl = document.getElementById('kpi-roas');
-  roasEl.textContent = fmtRoas(roasG);
-  roasEl.style.color = roasG >= ROAS_TARGET ? 'var(--pos)' : (roasG > 0 ? 'var(--warn)' : '');
+  const roasHeroEl = document.getElementById('kpi-roas-hero');
+  if (roasHeroEl) roasHeroEl.style.color = roasG >= ROAS_TARGET ? 'var(--pos)' : (roasG > 0 ? 'var(--warn)' : '');
 }
 
 // ============================================================
