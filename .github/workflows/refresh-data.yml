@@ -1,0 +1,41 @@
+name: Refresh Dashboard Data
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'  # Every 15 minutes
+  workflow_dispatch: {}      # Manual trigger
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run fetch script
+        env:
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          DATABRICKS_HOST: https://dbc-8acefaf9-a170.cloud.databricks.com
+          DATABRICKS_WAREHOUSE_ID: bbae754ea44f67e0
+        run: python g4valley-fetch.py
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html g4valley-data.json
+          if git diff --staged --quiet; then
+            echo "No data changes"
+          else
+            git commit -m "data: auto-refresh $(date -u '+%Y-%m-%d %H:%M') UTC"
+            git push
+          fi
