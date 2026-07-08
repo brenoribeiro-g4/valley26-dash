@@ -1067,6 +1067,7 @@ async function fetchData() {
   updateCharts();
   buildDailyTable();
   buildCanalFatTable();
+  buildPage3();
   btn.textContent = '↻ Atualizar';
 }
 
@@ -1826,33 +1827,44 @@ function buildAdsFunnel() {
 function buildPage3() {
   buildAdsFunnel();
 
-  // Campaign table
+  // Campaign table — real data from Databricks (DATA.ads_report) with mock fallback
+  const useReal = !!(DATA && DATA.ads_report && DATA.ads_report.length > 0);
+  const adsData = useReal ? DATA.ads_report : ADS_MOCK_CAMPAIGNS;
   const tbodyC = document.getElementById('tbodyCampaigns');
   tbodyC.innerHTML = '';
-  const maxInvest = Math.max(...ADS_MOCK_CAMPAIGNS.map(r => r.invest));
-  const maxFat = Math.max(...ADS_MOCK_CAMPAIGNS.map(r => r.fat), 1);
+  const maxInvest = Math.max(...adsData.map(r => r.invest || 0), 1);
+  const maxFat = Math.max(...adsData.map(r => r.fat || 0), 1);
 
-  ADS_MOCK_CAMPAIGNS.forEach(row => {
+  adsData.forEach(row => {
+    const campaign = row.campaign || row.ad_name || '—';
+    const adsetId = String(row.adset_id || row.adset || '—').substring(0, 14);
+    const adId = String(row.ad_id || row.ad || '—').substring(0, 14);
+    const invest = row.invest || 0;
+    const ctr = row.ctr || 0;
+    const vendas = row.vendas || 0;
+    const fat = row.fat || 0;
+    const cpa = vendas > 0 ? invest / vendas : 0;
+    const roas = invest > 0 ? fat / invest : 0;
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td style="font-size:11px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${row.campaign}</td>
-      <td style="text-align:left;font-size:10px;color:var(--faint)">${row.adset}</td>
-      <td style="text-align:left;font-size:10px;color:var(--faint)">${row.ad}</td>
-      <td style="background:${heat(row.invest, maxInvest, RGB.blue)};color:var(--text-hi);font-weight:600">${fmtR(row.invest)}</td>
-      <td style="background:${heat(row.ctr, 5, RGB.purple)}">${row.ctr.toFixed(2)}%</td>
-      <td style="background:${heat(row.vendas, 3, RGB.purple)};color:${row.vendas>0?'var(--text-hi)':'var(--faint)'}">${row.vendas || '—'}</td>
-      <td>${row.cpa > 0 ? fmtR(row.cpa) : '<span class="muted-val">—</span>'}</td>
-      <td style="background:${heat(row.fat, maxFat, RGB.teal)};color:${row.fat>0?'var(--pos)':'var(--faint)'}">${row.fat > 0 ? fmtR(row.fat) : '—'}</td>
-      <td style="background:${heat(row.roas, 1, RGB.gold)};color:${row.roas>0?'var(--warn)':'var(--faint)'}">${row.roas > 0 ? row.roas.toFixed(2) : '—'}</td>`;
+      <td style="font-size:11px;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${campaign}">${campaign}</td>
+      <td style="text-align:left;font-size:10px;color:var(--faint)">${adsetId}</td>
+      <td style="text-align:left;font-size:10px;color:var(--faint)">${adId}</td>
+      <td style="background:${heat(invest, maxInvest, RGB.blue)};color:var(--text-hi);font-weight:600">${fmtR(invest)}</td>
+      <td style="background:${heat(ctr, 5, RGB.purple)}">${ctr.toFixed(2)}%</td>
+      <td style="background:${heat(vendas, 3, RGB.purple)};color:${vendas>0?'var(--text-hi)':'var(--faint)'}">${vendas || '—'}</td>
+      <td>${cpa > 0 ? fmtR(cpa) : '<span class="muted-val">—</span>'}</td>
+      <td style="background:${heat(fat, maxFat, RGB.teal)};color:${fat>0?'var(--pos)':'var(--faint)'}">${fat > 0 ? fmtR(fat) : '—'}</td>
+      <td style="background:${heat(roas, 3, RGB.gold)};color:${roas>0?'var(--warn)':'var(--faint)'}">${roas > 0 ? roas.toFixed(2) : '—'}</td>`;
     tbodyC.appendChild(tr);
   });
 
-  const totC = ADS_MOCK_CAMPAIGNS.reduce((s,r) => ({invest:s.invest+r.invest, vendas:s.vendas+r.vendas, fat:s.fat+r.fat}), {invest:0,vendas:0,fat:0});
+  const totC = adsData.reduce((s,r) => ({invest:s.invest+(r.invest||0), vendas:s.vendas+(r.vendas||0), fat:s.fat+(r.fat||0)}), {invest:0,vendas:0,fat:0});
   const trTC = document.createElement('tr');
   trTC.classList.add('total-row');
-  trTC.innerHTML = `<td colspan="3">Total geral</td><td>${fmtR(totC.invest)}</td><td>3,33%</td><td>${totC.vendas}</td><td>${totC.vendas>0?fmtR(totC.invest/totC.vendas):'—'}</td><td style="color:var(--pos)">${fmtR(totC.fat)}</td><td>${(totC.fat/totC.invest).toFixed(2)}</td>`;
+  trTC.innerHTML = `<td colspan="3">Total geral</td><td>${fmtR(totC.invest)}</td><td></td><td>${totC.vendas}</td><td>${totC.vendas>0?fmtR(totC.invest/totC.vendas):'—'}</td><td style="color:var(--pos)">${fmtR(totC.fat)}</td><td>${totC.invest>0?(totC.fat/totC.invest).toFixed(2):'—'}</td>`;
   tbodyC.appendChild(trTC);
-  document.getElementById('tag-campaigns').textContent = ADS_MOCK_CAMPAIGNS.length + ' linhas';
+  document.getElementById('tag-campaigns').textContent = adsData.length + ' linhas' + (useReal ? '' : ' · mock');
 
   // Ad table
   const tbodyA = document.getElementById('tbodyAds');
