@@ -1,0 +1,692 @@
+{
+  "meta_total_receita": 1000000,
+  "meta_total_ingressos": 833,
+  "ticket_medio_meta": 1200,
+  "period_start": "2026-07-07",
+  "period_end": "2026-07-31",
+  "total_days": 25,
+  "channel_metas": {
+    "hubspot": 387244.29,
+    "whatsapp": 444226.56,
+    "meta_ads": 81291.18,
+    "google_ads": 42843.6,
+    "instagram": 44394.37
+  },
+  "daily": [
+    {
+      "date": "2026-07-07",
+      "total": {
+        "ing": 283,
+        "rec": 340000.0
+      },
+      "hubspot": {
+        "ing": 98,
+        "rec": 117431.1
+      },
+      "whatsapp": {
+        "ing": 164,
+        "rec": 196910.74
+      },
+      "meta_ads": {
+        "ing": 3,
+        "rec": 4153.8
+      },
+      "google_ads": {
+        "ing": 3,
+        "rec": 3791.59
+      },
+      "instagram": {
+        "ing": 15,
+        "rec": 17712.77
+      }
+    },
+    {
+      "date": "2026-07-08",
+      "total": {
+        "ing": 75,
+        "rec": 90000.0
+      },
+      "hubspot": {
+        "ing": 39,
+        "rec": 46661.57
+      },
+      "whatsapp": {
+        "ing": 23,
+        "rec": 27711.07
+      },
+      "meta_ads": {
+        "ing": 4,
+        "rec": 4489.42
+      },
+      "google_ads": {
+        "ing": 6,
+        "rec": 7719.38
+      },
+      "instagram": {
+        "ing": 3,
+        "rec": 3418.56
+      }
+    },
+    {
+      "date": "2026-07-09",
+      "total": {
+        "ing": 25,
+        "rec": 30000.0
+      },
+      "hubspot": {
+        "ing": 9,
+        "rec": 11028.53
+      },
+      "whatsapp": {
+        "ing": 9,
+        "rec": 11375.53
+      },
+      "meta_ads": {
+        "ing": 4,
+        "rec": 4258.29
+      },
+      "google_ads": {
+        "ing": 2,
+        "rec": 1813.82
+      },
+      "instagram": {
+        "ing": 1,
+        "rec": 1523.83
+      }
+    },
+    {
+      "date": "2026-07-10",
+      "total": {
+        "ing": 13,
+        "rec": 15500.0
+      },
+      "hubspot": {
+        "ing": 5,
+        "rec": 5698.07
+      },
+      "whatsapp": {
+        "ing": 5,
+        "rec": 5877.36
+      },
+      "meta_ads": {
+        "ing": 2,
+        "rec": 2200.12
+      },
+      "google_ads": {
+        "ing": 1,
+        "rec": 937.14
+      },
+      "instagram": {
+        "ing": 1,
+        "rec": 787.31
+      }
+    },
+    {
+      "date": "2026-07-11",
+      "total": {
+        "ing": 7,
+        "rec": 8212.5
+      },
+      "hubspot": {
+        "ing": 3,
+        "rec": 3019.06
+      },
+      "whatsapp": {
+        "ing": 3,
+        "rec": 3114.05
+      },
+      "meta_ads": {
+        "ing": 1,
+        "rec": 1165.71
+      },
+      "google_ads": {
+        "ing": 0,
+        "rec": 496.53
+      },
+      "instagram": {
+        "ing": 0,
+        "rec": 417.15
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "total": {
+        "ing": 6,
+        "rec": 7612.5
+      },
+      "hubspot": {
+        "ing": 2,
+        "rec": 2798.49
+      },
+      "whatsapp": {
+        "ing": 2,
+        "rec": 2886.54
+      },
+      "meta_ads": {
+        "ing": 1,
+        "rec": 1080.54
+      },
+      "google_ads": {
+        "ing": 0,
+        "rec": 460.26
+      },
+      "instagram": {
+        "ing": 0,
+        "rec": 386.67
+      }
+    },
+    {
+      "date": "2026-07-13",
+      "total": {
+        "ing": 9,
+        "rec": 10212.5
+      },
+      "hubspot": {
+        "ing": 3,
+        "rec": 3754.3
+      },
+      "whatsapp": {
+        "ing": 3,
+        "rec": 3872.42
+      },
+      "meta_ads": {
+        "ing": 1,
+        "rec": 1449.59
+      },
+      "google_ads": {
+        "ing": 1,
+        "rec": 617.45
+      },
+      "instagram": {
+        "ing": 0,
+        "rec": 518.74
+      }
+    },
+    {
+      "date": "2026-07-14",
+      "total": {
+        "ing": 10,
+        "rec": 11812.5
+      },
+      "hubspot": {
+        "ing": 4,
+        "rec": 4342.48
+      },
+      "whatsapp": {
+        "ing": 4,
+        "rec": 4479.12
+      },
+      "meta_ads": {
+        "ing": 1,
+        "rec": 1676.7
+      },
+      "google_ads": {
+        "ing": 1,
+        "rec": 714.19
+      },
+      "instagram": {
+        "ing": 1,
+        "rec": 600.01
+      }
+    },
+    {
+      "date": "2026-07-15",
+      "total": {
+        "ing": 10,
+        "rec": 12112.5
+      },
+      "hubspot": {
+        "ing": 4,
+        "rec": 4452.77
+      },
+      "whatsapp": {
+        "ing": 4,
+        "rec": 4592.88
+      },
+      "meta_ads": {
+        "ing": 1,
+        "rec": 1719.28
+      },
+      "google_ads": {
+        "ing": 1,
+        "rec": 732.33
+      },
+      "instagram": {
+        "ing": 1,
+        "rec": 615.24
+      }
+    },
+    {
+      "date": "2026-07-16",
+      "total": {
+        "ing": 11,
+        "rec": 13412.5
+      },
+      "hubspot": {
+        "ing": 4,
+        "rec": 4930.67
+      },
+      "whatsapp": {
+        "ing": 4,
+        "rec": 5085.81
+      },
+      "meta_ads": {
+        "ing": 2,
+        "rec": 1903.81
+      },
+      "google_ads": {
+        "ing": 1,
+        "rec": 810.93
+      },
+      "instagram": {
+        "ing": 1,
+        "rec": 681.28
+      }
+    },
+    {
+      "date": "2026-07-17",
+      "total": {
+        "ing": 9,
+        "rec": 10812.5
+      },
+      "hubspot": {
+        "ing": 3,
+        "rec": 3974.87
+      },
+      "whatsapp": {
+        "ing": 3,
+        "rec": 4099.93
+      },
+      "meta_ads": {
+        "ing": 1,
+        "rec": 1534.76
+      },
+      "google_ads": {
+        "ing": 1,
+        "rec": 653.73
+      },
+      "instagram": {
+        "ing": 0,
+        "rec": 549.21
+      }
+    },
+    {
+      "date": "2026-07-18",
+      "total": {
+        "ing": 7,
+        "rec": 8212.5
+      },
+      "hubspot": {
+        "ing": 3,
+        "rec": 3019.06
+      },
+      "whatsapp": {
+        "ing": 3,
+        "rec": 3114.05
+      },
+      "meta_ads": {
+        "ing": 1,
+        "rec": 1165.71
+      },
+      "google_ads": {
+        "ing": 0,
+        "rec": 496.53
+      },
+      "instagram": {
+        "ing": 0,
+        "rec": 417.15
+      }
+    },
+    {
+      "date": "2026-07-19",
+      "total": {
+        "ing": 6,
+        "rec": 7612.5
+      },
+      "hubspot": {
+        "ing": 2,
+        "rec": 2798.49
+      },
+      "whatsapp": {
+        "ing": 2,
+        "rec": 2886.54
+      },
+      "meta_ads": {
+        "ing": 1,
+        "rec": 1080.54
+      },
+      "google_ads": {
+        "ing": 0,
+        "rec": 460.26
+      },
+      "instagram": {
+        "ing": 0,
+        "rec": 386.67
+      }
+    },
+    {
+      "date": "2026-07-20",
+      "total": {
+        "ing": 9,
+        "rec": 10212.5
+      },
+      "hubspot": {
+        "ing": 3,
+        "rec": 3754.3
+      },
+      "whatsapp": {
+        "ing": 3,
+        "rec": 3872.42
+      },
+      "meta_ads": {
+        "ing": 1,
+        "rec": 1449.59
+      },
+      "google_ads": {
+        "ing": 1,
+        "rec": 617.45
+      },
+      "instagram": {
+        "ing": 0,
+        "rec": 518.74
+      }
+    },
+    {
+      "date": "2026-07-21",
+      "total": {
+        "ing": 10,
+        "rec": 11812.5
+      },
+      "hubspot": {
+        "ing": 4,
+        "rec": 4342.48
+      },
+      "whatsapp": {
+        "ing": 4,
+        "rec": 4479.12
+      },
+      "meta_ads": {
+        "ing": 1,
+        "rec": 1676.7
+      },
+      "google_ads": {
+        "ing": 1,
+        "rec": 714.19
+      },
+      "instagram": {
+        "ing": 1,
+        "rec": 600.01
+      }
+    },
+    {
+      "date": "2026-07-22",
+      "total": {
+        "ing": 10,
+        "rec": 12112.5
+      },
+      "hubspot": {
+        "ing": 4,
+        "rec": 4452.77
+      },
+      "whatsapp": {
+        "ing": 4,
+        "rec": 4592.88
+      },
+      "meta_ads": {
+        "ing": 1,
+        "rec": 1719.28
+      },
+      "google_ads": {
+        "ing": 1,
+        "rec": 732.33
+      },
+      "instagram": {
+        "ing": 1,
+        "rec": 615.24
+      }
+    },
+    {
+      "date": "2026-07-23",
+      "total": {
+        "ing": 11,
+        "rec": 13412.5
+      },
+      "hubspot": {
+        "ing": 4,
+        "rec": 4930.67
+      },
+      "whatsapp": {
+        "ing": 4,
+        "rec": 5085.81
+      },
+      "meta_ads": {
+        "ing": 2,
+        "rec": 1903.81
+      },
+      "google_ads": {
+        "ing": 1,
+        "rec": 810.93
+      },
+      "instagram": {
+        "ing": 1,
+        "rec": 681.28
+      }
+    },
+    {
+      "date": "2026-07-24",
+      "total": {
+        "ing": 9,
+        "rec": 10812.5
+      },
+      "hubspot": {
+        "ing": 3,
+        "rec": 3974.87
+      },
+      "whatsapp": {
+        "ing": 3,
+        "rec": 4099.93
+      },
+      "meta_ads": {
+        "ing": 1,
+        "rec": 1534.76
+      },
+      "google_ads": {
+        "ing": 1,
+        "rec": 653.73
+      },
+      "instagram": {
+        "ing": 0,
+        "rec": 549.21
+      }
+    },
+    {
+      "date": "2026-07-25",
+      "total": {
+        "ing": 7,
+        "rec": 8212.5
+      },
+      "hubspot": {
+        "ing": 3,
+        "rec": 3019.06
+      },
+      "whatsapp": {
+        "ing": 3,
+        "rec": 3114.05
+      },
+      "meta_ads": {
+        "ing": 1,
+        "rec": 1165.71
+      },
+      "google_ads": {
+        "ing": 0,
+        "rec": 496.53
+      },
+      "instagram": {
+        "ing": 0,
+        "rec": 417.15
+      }
+    },
+    {
+      "date": "2026-07-26",
+      "total": {
+        "ing": 6,
+        "rec": 7612.5
+      },
+      "hubspot": {
+        "ing": 2,
+        "rec": 2798.49
+      },
+      "whatsapp": {
+        "ing": 2,
+        "rec": 2886.54
+      },
+      "meta_ads": {
+        "ing": 1,
+        "rec": 1080.54
+      },
+      "google_ads": {
+        "ing": 0,
+        "rec": 460.26
+      },
+      "instagram": {
+        "ing": 0,
+        "rec": 386.67
+      }
+    },
+    {
+      "date": "2026-07-27",
+      "total": {
+        "ing": 63,
+        "rec": 75300.0
+      },
+      "hubspot": {
+        "ing": 23,
+        "rec": 27681.61
+      },
+      "whatsapp": {
+        "ing": 24,
+        "rec": 28552.61
+      },
+      "meta_ads": {
+        "ing": 9,
+        "rec": 10688.3
+      },
+      "google_ads": {
+        "ing": 4,
+        "rec": 4552.68
+      },
+      "instagram": {
+        "ing": 3,
+        "rec": 3824.8
+      }
+    },
+    {
+      "date": "2026-07-28",
+      "total": {
+        "ing": 192,
+        "rec": 230000.0
+      },
+      "hubspot": {
+        "ing": 82,
+        "rec": 98161.61
+      },
+      "whatsapp": {
+        "ing": 76,
+        "rec": 90682.02
+      },
+      "meta_ads": {
+        "ing": 20,
+        "rec": 24387.35
+      },
+      "google_ads": {
+        "ing": 9,
+        "rec": 10776.02
+      },
+      "instagram": {
+        "ing": 5,
+        "rec": 5993.0
+      }
+    },
+    {
+      "date": "2026-07-29",
+      "total": {
+        "ing": 25,
+        "rec": 30000.0
+      },
+      "hubspot": {
+        "ing": 9,
+        "rec": 11028.53
+      },
+      "whatsapp": {
+        "ing": 9,
+        "rec": 11375.53
+      },
+      "meta_ads": {
+        "ing": 4,
+        "rec": 4258.29
+      },
+      "google_ads": {
+        "ing": 2,
+        "rec": 1813.82
+      },
+      "instagram": {
+        "ing": 1,
+        "rec": 1523.83
+      }
+    },
+    {
+      "date": "2026-07-30",
+      "total": {
+        "ing": 13,
+        "rec": 15500.0
+      },
+      "hubspot": {
+        "ing": 5,
+        "rec": 5698.07
+      },
+      "whatsapp": {
+        "ing": 5,
+        "rec": 5877.36
+      },
+      "meta_ads": {
+        "ing": 2,
+        "rec": 2200.12
+      },
+      "google_ads": {
+        "ing": 1,
+        "rec": 937.14
+      },
+      "instagram": {
+        "ing": 1,
+        "rec": 787.31
+      }
+    },
+    {
+      "date": "2026-07-31",
+      "total": {
+        "ing": 8,
+        "rec": 9500.0
+      },
+      "hubspot": {
+        "ing": 3,
+        "rec": 3492.37
+      },
+      "whatsapp": {
+        "ing": 3,
+        "rec": 3602.25
+      },
+      "meta_ads": {
+        "ing": 1,
+        "rec": 1348.46
+      },
+      "google_ads": {
+        "ing": 0,
+        "rec": 574.38
+      },
+      "instagram": {
+        "ing": 0,
+        "rec": 482.54
+      }
+    }
+  ]
+}

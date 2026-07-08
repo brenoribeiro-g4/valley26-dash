@@ -33,7 +33,7 @@ if not DATABRICKS_TOKEN:
 
 EDITION = "g4valley-1026"
 LOTE_START = "2026-07-07"
-LOTE_END = "2026-07-28"
+LOTE_END = "2026-07-31"
 
 OUTPUT_FILE = "g4valley-data.json"
 
