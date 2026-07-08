@@ -171,11 +171,21 @@ def fetch_vendas_by_day_canal():
 
 
 def fetch_vendas_by_hour():
-    """Hourly sales distribution (all days combined)."""
+    """Hourly sales distribution with reclassified channels."""
     sql = f"""
     SELECT
         HOUR(ts_event) as hora,
-        COALESCE(utm_source, 'nao-definido') as canal,
+        CASE
+            WHEN utm_source = 'facebook' AND LOWER(utm_campaign) LIKE '%_adsfb_gtm_g4valley26_vendas_carrinhoaberto_alwayson%' THEN 'meta_ads'
+            WHEN utm_source = 'facebook' THEN 'facebook_other'
+            WHEN utm_source = 'google' AND LOWER(utm_campaign) LIKE '%_adsgg_gtm_g4valley26_carrinhoaberto_vendas_%' THEN 'google_ads'
+            WHEN utm_source = 'google' THEN 'google_other'
+            WHEN utm_source IN ('instagram', 'ig') AND LOWER(COALESCE(utm_medium,'')) IN ('tg', 'tg_social', 'tallis', 'thallis') THEN 'tg_social'
+            WHEN utm_source IN ('instagram', 'ig') AND LOWER(COALESCE(utm_medium,'')) IN ('alfredo', 'alf') THEN 'alfredo'
+            WHEN utm_source IN ('instagram', 'ig') AND LOWER(COALESCE(utm_medium,'')) IN ('nardon', 'nard') THEN 'nardon'
+            WHEN utm_source IN ('instagram', 'ig') THEN 'g4_social'
+            ELSE COALESCE(utm_source, 'nao-definido')
+        END as canal,
         COUNT(*) as vendas,
         ROUND(SUM(vl_venda), 2) as faturamento
     FROM g4_eventos_lancamentos.vw_mart_eventos_orders
