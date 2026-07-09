@@ -795,47 +795,48 @@ td:first-child { text-align: left; }
 
     <div class="section-header">
       <div>
-        <div class="section-label" style="font-size:15px" id="adsPageTitle">Relatório de Anúncios — Meta</div>
+        <div class="section-label" style="font-size:15px" id="adsPageTitle">Relatório de Anúncios — Mídia Paga</div>
         <div class="section-desc" style="margin-top:3px">Performance detalhada por plataforma de mídia paga · campanhas e anúncios individuais</div>
       </div>
       <div class="filter-pills" id="adsPlatformFilter">
-        <button class="pill active" onclick="setAdsPlatform('meta',this)">Meta</button>
+        <button class="pill active" onclick="setAdsPlatform('all',this)">Mídia Paga</button>
+        <button class="pill" onclick="setAdsPlatform('meta',this)">Meta</button>
         <button class="pill" onclick="setAdsPlatform('google',this)">Google</button>
         <button class="pill" onclick="setAdsPlatform('youtube',this)">YouTube</button>
       </div>
     </div>
 
-    <!-- ─── KPIs vs PERÍODO ANTERIOR ─── -->
+    <!-- ─── KPIs MÍDIA PAGA ─── -->
     <div class="kpi-strip" style="grid-template-columns:repeat(6,1fr)">
       <div class="kpi-cell">
         <div class="k-label">Faturamento Bruto</div>
-        <div class="k-value" id="ads-kpi-fat">R$ 230,1k</div>
-        <div class="k-sub"><span class="up">▲ +12,3%</span> vs período ant. · KR R$ 500k</div>
+        <div class="k-value" id="ads-kpi-fat">—</div>
+        <div class="k-sub">Receita atribuída a mídia paga</div>
       </div>
       <div class="kpi-cell">
         <div class="k-label">Investimento</div>
-        <div class="k-value" id="ads-kpi-invest">R$ 104k</div>
-        <div class="k-sub"><span class="up">▼ −8,2%</span> vs período ant. · KR R$ 250k</div>
+        <div class="k-value" id="ads-kpi-invest">—</div>
+        <div class="k-sub">Total investido no período</div>
       </div>
       <div class="kpi-cell">
-        <div class="k-label">ROAS Geral MKT</div>
-        <div class="k-value" id="ads-kpi-roas-geral">2,21×</div>
-        <div class="k-sub"><span class="up">▲ +0,4</span> · alvo 3,00×</div>
+        <div class="k-label">ROAS</div>
+        <div class="k-value" id="ads-kpi-roas-geral">—</div>
+        <div class="k-sub">Fat ÷ Investimento</div>
       </div>
       <div class="kpi-cell">
         <div class="k-label">CPA</div>
-        <div class="k-value" id="ads-kpi-cpa">R$ 4,0k</div>
-        <div class="k-sub"><span class="down">▲ +15,6%</span> vs período ant.</div>
+        <div class="k-value" id="ads-kpi-cpa">—</div>
+        <div class="k-sub">Invest ÷ Vendas</div>
       </div>
       <div class="kpi-cell">
         <div class="k-label">Ticket Médio</div>
-        <div class="k-value" id="ads-kpi-ticket">R$ 8,9k</div>
-        <div class="k-sub"><span class="up">▲ +5,1%</span> vs período ant.</div>
+        <div class="k-value" id="ads-kpi-ticket">—</div>
+        <div class="k-sub">Fat ÷ Vendas</div>
       </div>
       <div class="kpi-cell">
         <div class="k-label">Vendas</div>
-        <div class="k-value" id="ads-kpi-vendas">26</div>
-        <div class="k-sub"><span class="up">▲ +18,2%</span> vs período ant.</div>
+        <div class="k-value" id="ads-kpi-vendas">—</div>
+        <div class="k-sub">Vendas atribuídas</div>
       </div>
     </div>
 
@@ -855,7 +856,7 @@ td:first-child { text-align: left; }
     </div>
     <div class="table-card">
       <div class="card-header" style="margin-bottom:12px">
-        <div><div class="card-title" id="adsPlatformLogo" style="color:var(--c-meta)">Meta for Business</div></div>
+        <div><div class="card-title" id="adsPlatformLogo" style="color:var(--text-hi)">Mídia Paga (FB + GG + YT)</div></div>
         <span class="tag num" id="tag-campaigns">—</span>
       </div>
       <div class="table-wrap" style="max-height:500px">
@@ -1882,16 +1883,20 @@ const ADS_MOCK_ADS = [
   {name:'#01 H003 V001 Laura', tag:'Meta 9X16 FBA Aquisicao VIDEO Jotta', invest:317.01, ctr:3.32, vendas:1, hookRate:43.2, bodyRate:26.9, ticket:8857, cpView:2.18, cpInit:105, roas:0.41},
 ];
 
+let currentAdsPlatform = 'all';
+
 function setAdsPlatform(platform, btn) {
   document.querySelectorAll('#adsPlatformFilter .pill').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
-  const titles = { meta:'Relatório de Anúncios — Meta', google:'Relatório de Anúncios — Google', youtube:'Relatório de Anúncios — YouTube' };
-  document.getElementById('adsPageTitle').textContent = titles[platform] || titles.meta;
-  const logos = { meta:'Meta for Business', google:'Google Ads', youtube:'YouTube Ads' };
-  const colors = { meta:CH_COLOR.meta, google:CH_COLOR.google, youtube:CH_COLOR.youtube };
+  currentAdsPlatform = platform;
+  const titles = { all:'Relatório de Anúncios — Mídia Paga', meta:'Relatório de Anúncios — Meta', google:'Relatório de Anúncios — Google', youtube:'Relatório de Anúncios — YouTube' };
+  document.getElementById('adsPageTitle').textContent = titles[platform] || titles.all;
+  const logos = { all:'Mídia Paga (FB + GG + YT)', meta:'Meta for Business', google:'Google Ads', youtube:'YouTube Ads' };
+  const colors = { all:'var(--text-hi)', meta:CH_COLOR.meta, google:CH_COLOR.google, youtube:CH_COLOR.youtube };
   const el = document.getElementById('adsPlatformLogo');
   el.textContent = logos[platform];
   el.style.color = colors[platform];
+  buildPage3();
 }
 
 function heat(value, max, rgb) {
@@ -1902,14 +1907,48 @@ function heat(value, max, rgb) {
 const RGB = { blue:'91,156,245', purple:'164,140,242', teal:'69,193,161', gold:'208,169,78' };
 
 function buildAdsFunnel() {
+  if (!DATA || !DATA.mkt_by_canal) return;
+  const platform = currentAdsPlatform;
+  let impressoes = 0, clicks = 0, invest = 0, vendas = 0;
+
+  const fb = DATA.mkt_by_canal.facebook || {};
+  const gg = DATA.mkt_by_canal.google || {};
+
+  if (platform === 'all' || platform === 'meta') {
+    impressoes += fb.impressoes || 0;
+    clicks += fb.clicks || 0;
+    invest += fb.investimento || 0;
+  }
+  if (platform === 'all' || platform === 'google') {
+    impressoes += gg.impressoes || 0;
+    clicks += gg.clicks || 0;
+    invest += gg.investimento || 0;
+  }
+  // YouTube: no spend data yet
+
+  // Vendas from perf_canal
+  if (platform === 'all') {
+    vendas = (DATA.perf_canal?.meta_ads?.vendas || 0) + (DATA.perf_canal?.google?.vendas || 0) + (DATA.perf_canal?.youtube?.vendas || 0);
+  } else if (platform === 'meta') {
+    vendas = DATA.perf_canal?.meta_ads?.vendas || 0;
+  } else if (platform === 'google') {
+    vendas = DATA.perf_canal?.google?.vendas || 0;
+  } else {
+    vendas = DATA.perf_canal?.youtube?.vendas || 0;
+  }
+
+  const cpm = impressoes > 0 ? (invest / impressoes * 1000) : 0;
+  const cpc = clicks > 0 ? (invest / clicks) : 0;
+  const cpa = vendas > 0 ? (invest / vendas) : 0;
+  const ctrPct = impressoes > 0 ? (clicks / impressoes * 100) : 0;
+  const convPct = clicks > 0 ? (vendas / clicks * 100) : 0;
+
   const stages = [
-    { label:'Impressões', value:3245890, cost:'CPM <strong>R$ 32</strong>', conv:'3,33%' },
-    { label:'Click Anúncio', value:108072, cost:'CPC <strong>R$ 0,96</strong>', conv:'42,5%' },
-    { label:'View Page', value:45930, cost:'CP. View <strong>R$ 2,26</strong>', conv:'1,84%' },
-    { label:'Initiate Checkout', value:845, cost:'CP. Init <strong>R$ 123</strong>', conv:'3,08%' },
-    { label:'Vendas', value:26, cost:'CPA <strong>R$ 4.001</strong>', conv:null, final:true },
+    { label:'Impressões', value: impressoes, cost:`CPM <strong>${fmtR(cpm)}</strong>`, conv: ctrPct > 0 ? ctrPct.toFixed(2) + '%' : null },
+    { label:'Clicks', value: clicks, cost:`CPC <strong>${fmtR(cpc)}</strong>`, conv: convPct > 0 ? convPct.toFixed(3) + '%' : null },
+    { label:'Vendas', value: vendas, cost:`CPA <strong>${fmtR(cpa)}</strong>`, conv: null, final: true },
   ];
-  const widths = [100, 82, 66, 50, 36];
+  const widths = [100, 72, 40];
   document.getElementById('adsFunnel').innerHTML = stages.map((s, i) => `
     <div class="funnel-row">
       <div class="funnel-bar ${s.final ? 'final' : ''}" style="width:${widths[i]}%">
@@ -1923,11 +1962,53 @@ function buildAdsFunnel() {
 }
 
 function buildPage3() {
+  if (!DATA) return;
+  const platform = currentAdsPlatform;
+
+  // ─── KPIs from real data ───
+  let kFat = 0, kInvest = 0, kVendas = 0, kTicket = 0, kCpa = 0, kRoas = 0;
+  const pc = DATA.perf_canal || {};
+  if (platform === 'all') {
+    ['meta_ads','google','youtube'].forEach(k => {
+      kFat += pc[k]?.fat || 0;
+      kInvest += pc[k]?.invest || 0;
+      kVendas += pc[k]?.vendas || 0;
+    });
+  } else {
+    const key = platform === 'meta' ? 'meta_ads' : platform;
+    kFat = pc[key]?.fat || 0;
+    kInvest = pc[key]?.invest || 0;
+    kVendas = pc[key]?.vendas || 0;
+  }
+  kTicket = kVendas > 0 ? kFat / kVendas : 0;
+  kCpa = kVendas > 0 ? kInvest / kVendas : 0;
+  kRoas = kInvest > 0 ? kFat / kInvest : 0;
+
+  document.getElementById('ads-kpi-fat').textContent = fmtR(kFat);
+  document.getElementById('ads-kpi-invest').textContent = fmtR(kInvest);
+  document.getElementById('ads-kpi-roas-geral').textContent = kRoas.toFixed(2) + '×';
+  document.getElementById('ads-kpi-cpa').textContent = kCpa > 0 ? fmtR(kCpa) : '—';
+  document.getElementById('ads-kpi-ticket').textContent = kTicket > 0 ? fmtR(kTicket) : '—';
+  document.getElementById('ads-kpi-vendas').textContent = kVendas || '—';
+
+  // ─── Funnel ───
   buildAdsFunnel();
 
-  // Campaign table — real data from Databricks (DATA.ads_report) with mock fallback
-  const useReal = !!(DATA && DATA.ads_report && DATA.ads_report.length > 0);
-  const adsData = useReal ? DATA.ads_report : ADS_MOCK_CAMPAIGNS;
+  // ─── Campaign table — filter by platform ───
+  const useReal = !!(DATA.ads_report && DATA.ads_report.length > 0);
+  let adsData = useReal ? DATA.ads_report : ADS_MOCK_CAMPAIGNS;
+
+  // Filter ads by platform (ads_report has 'platform' field or we detect from campaign name)
+  if (useReal && platform !== 'all') {
+    if (platform === 'meta') {
+      adsData = adsData.filter(r => (r.platform || 'meta') === 'meta' || (r.campaign && r.campaign.includes('_adsfb_')));
+    } else if (platform === 'google') {
+      adsData = adsData.filter(r => r.platform === 'google' || (r.campaign && r.campaign.includes('_adsgg_')));
+    } else if (platform === 'youtube') {
+      adsData = adsData.filter(r => r.platform === 'youtube');
+    }
+  }
+
   const tbodyC = document.getElementById('tbodyCampaigns');
   tbodyC.innerHTML = '';
   const maxInvest = Math.max(...adsData.map(r => r.invest || 0), 1);
@@ -1964,32 +2045,73 @@ function buildPage3() {
   tbodyC.appendChild(trTC);
   document.getElementById('tag-campaigns').textContent = adsData.length + ' linhas' + (useReal ? '' : ' · mock');
 
-  // Ad table
+  // ─── Ad detail table (same real data, grouped by ad_name) ───
   const tbodyA = document.getElementById('tbodyAds');
   tbodyA.innerHTML = '';
-  const maxInvestA = Math.max(...ADS_MOCK_ADS.map(r => r.invest));
-  const maxHook = Math.max(...ADS_MOCK_ADS.map(r => r.hookRate));
-
-  ADS_MOCK_ADS.forEach(row => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><span style="color:var(--c-meta);font-weight:600">${row.name}</span><br><span style="font-size:9px;color:var(--faint)">${row.tag}</span></td>
-      <td style="background:${heat(row.invest, maxInvestA, RGB.blue)};color:var(--text-hi);font-weight:600">${fmtR(row.invest)}</td>
-      <td style="background:${heat(row.ctr, 5, RGB.purple)}">${row.ctr.toFixed(2)}%</td>
-      <td style="background:${heat(row.vendas, 3, RGB.purple)};color:${row.vendas>0?'var(--text-hi)':'var(--faint)'}">${row.vendas || '—'}</td>
-      <td style="background:${heat(row.hookRate, maxHook, RGB.teal)}">${row.hookRate.toFixed(1)}%</td>
-      <td>${row.bodyRate.toFixed(1)}%</td>
-      <td>${row.ticket > 0 ? fmtR(row.ticket) : '<span class="muted-val">—</span>'}</td>
-      <td>${row.cpView > 0 ? 'R$ ' + row.cpView.toFixed(2).replace('.',',') : '—'}</td>
-      <td>${row.cpInit > 0 ? 'R$ ' + row.cpInit : '<span class="muted-val">—</span>'}</td>
-      <td style="background:${heat(row.roas, 1, RGB.gold)};color:${row.roas>0?'var(--warn)':'var(--faint)'}">${row.roas > 0 ? row.roas.toFixed(2) : '—'}</td>`;
-    tbodyA.appendChild(tr);
-  });
-  const totA = ADS_MOCK_ADS.reduce((s,r) => ({invest:s.invest+r.invest, vendas:s.vendas+r.vendas}), {invest:0,vendas:0});
-  const trTA = document.createElement('tr');
-  trTA.classList.add('total-row');
-  trTA.innerHTML = `<td>Total geral</td><td>${fmtR(totA.invest)}</td><td>3,33%</td><td>${totA.vendas}</td><td></td><td></td><td></td><td></td><td></td><td></td>`;
-  tbodyA.appendChild(trTA);
+  if (useReal) {
+    // Group by ad_name to get ad-level view
+    const adMap = {};
+    adsData.forEach(row => {
+      const name = row.ad_name || row.campaign || '—';
+      if (!adMap[name]) adMap[name] = { name, invest:0, clicks:0, impressoes:0, vendas:0, fat:0 };
+      adMap[name].invest += row.invest || 0;
+      adMap[name].clicks += row.clicks || 0;
+      adMap[name].impressoes += row.impressoes || 0;
+      adMap[name].vendas += row.vendas || 0;
+      adMap[name].fat += row.fat || 0;
+    });
+    const adRows = Object.values(adMap).sort((a,b) => b.invest - a.invest);
+    const maxInvA = Math.max(...adRows.map(r => r.invest), 1);
+    adRows.forEach(row => {
+      const ctr = row.impressoes > 0 ? (row.clicks / row.impressoes * 100) : 0;
+      const ticket = row.vendas > 0 ? row.fat / row.vendas : 0;
+      const cpClick = row.clicks > 0 ? row.invest / row.clicks : 0;
+      const cpa = row.vendas > 0 ? row.invest / row.vendas : 0;
+      const roas = row.invest > 0 ? row.fat / row.invest : 0;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-size:11px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${row.name}"><span style="color:var(--c-meta);font-weight:600">${row.name.substring(0,60)}</span></td>
+        <td style="background:${heat(row.invest, maxInvA, RGB.blue)};color:var(--text-hi);font-weight:600">${fmtR(row.invest)}</td>
+        <td style="background:${heat(ctr, 5, RGB.purple)}">${ctr.toFixed(2)}%</td>
+        <td style="background:${heat(row.vendas, 3, RGB.purple)};color:${row.vendas>0?'var(--text-hi)':'var(--faint)'}">${row.vendas || '—'}</td>
+        <td>—</td>
+        <td>—</td>
+        <td>${ticket > 0 ? fmtR(ticket) : '<span class="muted-val">—</span>'}</td>
+        <td>${cpClick > 0 ? fmtR(cpClick) : '—'}</td>
+        <td>${cpa > 0 ? fmtR(cpa) : '<span class="muted-val">—</span>'}</td>
+        <td style="background:${heat(roas, 3, RGB.gold)};color:${roas>0?'var(--warn)':'var(--faint)'}">${roas > 0 ? roas.toFixed(2) : '—'}</td>`;
+      tbodyA.appendChild(tr);
+    });
+    const totA = adRows.reduce((s,r) => ({invest:s.invest+r.invest, vendas:s.vendas+r.vendas, fat:s.fat+r.fat}), {invest:0,vendas:0,fat:0});
+    const trTA = document.createElement('tr');
+    trTA.classList.add('total-row');
+    trTA.innerHTML = `<td>Total geral</td><td>${fmtR(totA.invest)}</td><td></td><td>${totA.vendas}</td><td></td><td></td><td></td><td></td><td></td><td>${totA.invest>0?(totA.fat/totA.invest).toFixed(2):'—'}</td>`;
+    tbodyA.appendChild(trTA);
+  } else {
+    // Fallback mock
+    const maxInvestA = Math.max(...ADS_MOCK_ADS.map(r => r.invest));
+    const maxHook = Math.max(...ADS_MOCK_ADS.map(r => r.hookRate));
+    ADS_MOCK_ADS.forEach(row => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><span style="color:var(--c-meta);font-weight:600">${row.name}</span><br><span style="font-size:9px;color:var(--faint)">${row.tag}</span></td>
+        <td style="background:${heat(row.invest, maxInvestA, RGB.blue)};color:var(--text-hi);font-weight:600">${fmtR(row.invest)}</td>
+        <td style="background:${heat(row.ctr, 5, RGB.purple)}">${row.ctr.toFixed(2)}%</td>
+        <td style="background:${heat(row.vendas, 3, RGB.purple)};color:${row.vendas>0?'var(--text-hi)':'var(--faint)'}">${row.vendas || '—'}</td>
+        <td style="background:${heat(row.hookRate, maxHook, RGB.teal)}">${row.hookRate.toFixed(1)}%</td>
+        <td>${row.bodyRate.toFixed(1)}%</td>
+        <td>${row.ticket > 0 ? fmtR(row.ticket) : '<span class="muted-val">—</span>'}</td>
+        <td>${row.cpView > 0 ? 'R$ ' + row.cpView.toFixed(2).replace('.',',') : '—'}</td>
+        <td>${row.cpInit > 0 ? 'R$ ' + row.cpInit : '<span class="muted-val">—</span>'}</td>
+        <td style="background:${heat(row.roas, 1, RGB.gold)};color:${row.roas>0?'var(--warn)':'var(--faint)'}">${row.roas > 0 ? row.roas.toFixed(2) : '—'}</td>`;
+      tbodyA.appendChild(tr);
+    });
+    const totA = ADS_MOCK_ADS.reduce((s,r) => ({invest:s.invest+r.invest, vendas:s.vendas+r.vendas}), {invest:0,vendas:0});
+    const trTA = document.createElement('tr');
+    trTA.classList.add('total-row');
+    trTA.innerHTML = `<td>Total geral</td><td>${fmtR(totA.invest)}</td><td></td><td>${totA.vendas}</td><td></td><td></td><td></td><td></td><td></td><td></td>`;
+    tbodyA.appendChild(trTA);
+  }
 }
 
 // ============================================================
