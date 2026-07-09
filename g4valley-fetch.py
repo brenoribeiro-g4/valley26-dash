@@ -272,6 +272,7 @@ def fetch_ads_report():
     vendas AS (
         SELECT
             LOWER(utm_content) as ad_lower,
+            MAX(utm_term) as adset_name_from_deal,
             COUNT(*) as vendas,
             ROUND(SUM(vl_venda), 2) as fat
         FROM g4_eventos_lancamentos.vw_mart_eventos_orders
@@ -283,7 +284,7 @@ def fetch_ads_report():
     )
     SELECT
         am.ad_name,
-        am.adset_name,
+        COALESCE(v.adset_name_from_deal, am.adset_name) as adset_name,
         am.campaign,
         am.adset_id,
         am.ad_id,

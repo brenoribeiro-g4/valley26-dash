@@ -859,14 +859,21 @@ td:first-child { text-align: left; }
         <div><div class="card-title" id="adsPlatformLogo" style="color:var(--text-hi)">Mídia Paga (FB + GG + YT)</div></div>
         <span class="tag num" id="tag-campaigns">—</span>
       </div>
-      <!-- Filtro por Ad Name -->
-      <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input type="text" id="adsFilterInput" placeholder="Buscar Ad Name…" oninput="filterAdsDropdown()" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);font-size:12px;width:220px">
-        <div id="adsFilterPills" style="display:flex;gap:4px;flex-wrap:wrap"></div>
-        <button onclick="clearAdsFilter()" style="font-size:11px;padding:4px 8px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--faint);cursor:pointer">Limpar</button>
-      </div>
-      <div id="adsFilterDropdown" style="display:none;position:relative;z-index:10">
-        <div style="position:absolute;top:0;left:0;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;max-height:200px;overflow-y:auto;width:320px;box-shadow:0 4px 12px rgba(0,0,0,0.3)" id="adsDropdownList"></div>
+      <!-- Filtro por Campanha (dropdown estilo Meta Business) -->
+      <div style="margin-bottom:12px;position:relative">
+        <button id="adsFilterBtn" onclick="toggleAdsFilterPanel()" style="padding:8px 16px;border-radius:6px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px">
+          <span id="adsFilterBtnLabel">FILTRO DE CAMPANHA</span>
+          <span style="font-size:10px">▼</span>
+        </button>
+        <div id="adsFilterPanel" style="display:none;position:absolute;top:38px;left:0;z-index:100;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;width:360px;box-shadow:0 8px 24px rgba(0,0,0,0.4);padding:12px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--faint);cursor:pointer"><input type="checkbox" id="adsSelectAll" checked onchange="toggleAllAds()" style="accent-color:var(--c-meta)"> Todos</label>
+            <span style="flex:1"></span>
+            <button onclick="clearAdsFilter()" style="font-size:10px;padding:2px 6px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--faint);cursor:pointer">Limpar</button>
+          </div>
+          <input type="text" id="adsFilterInput" placeholder="🔍 Digite para pesquisar" oninput="renderAdsCheckboxList()" style="width:100%;padding:6px 10px;border-radius:5px;border:1px solid var(--border);background:var(--surface, var(--bg-card));color:var(--text);font-size:12px;margin-bottom:8px;box-sizing:border-box">
+          <div id="adsCheckboxList" style="max-height:220px;overflow-y:auto"></div>
+        </div>
       </div>
       <div class="table-wrap" style="max-height:500px">
         <table id="tableCampaigns">
@@ -1906,56 +1913,80 @@ function buildAdsFilterOptions(rawData, platform) {
   let filtered = rawData;
   if (platform !== 'all') filtered = rawData.filter(r => detectPlatform(r) === platform);
   allAdNameOptions = [...new Set(filtered.map(r => r.ad_name || '').filter(Boolean))].sort();
-  renderAdsPills();
+  updateFilterBtnLabel();
 }
 
-function renderAdsPills() {
-  const container = document.getElementById('adsFilterPills');
-  container.innerHTML = selectedAdNames.map((name, i) => {
-    const short = name.length > 35 ? name.substring(0,35) + '…' : name;
-    return `<span class="ad-filter-pill" data-idx="${i}" title="${name.replace(/"/g,'&quot;')}" style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:var(--c-meta);color:#fff;font-size:10px;cursor:default">${short} <span onclick="removeAdFilterIdx(${i})" style="cursor:pointer;font-weight:bold;margin-left:2px">×</span></span>`;
-  }).join('');
+function toggleAdsFilterPanel() {
+  const panel = document.getElementById('adsFilterPanel');
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) renderAdsCheckboxList();
 }
 
-function filterAdsDropdown() {
-  const input = document.getElementById('adsFilterInput');
-  const query = input.value.toLowerCase();
-  const dropdown = document.getElementById('adsFilterDropdown');
-  const list = document.getElementById('adsDropdownList');
+function renderAdsCheckboxList() {
+  const query = (document.getElementById('adsFilterInput')?.value || '').toLowerCase();
+  const list = document.getElementById('adsCheckboxList');
+  const filtered = query.length > 0
+    ? allAdNameOptions.filter(n => n.toLowerCase().includes(query))
+    : allAdNameOptions;
 
-  if (query.length < 2) { dropdown.style.display = 'none'; return; }
-
-  const matches = allAdNameOptions.filter(n =>
-    n.toLowerCase().includes(query) && !selectedAdNames.includes(n)
-  ).slice(0, 15);
-
-  if (matches.length === 0) { dropdown.style.display = 'none'; return; }
-
-  list.innerHTML = matches.map((name, i) => {
+  list.innerHTML = filtered.slice(0, 50).map(name => {
+    const checked = selectedAdNames.length === 0 || selectedAdNames.includes(name);
     const escaped = name.replace(/"/g,'&quot;');
-    return `<div data-adname="${escaped}" onclick="addAdFilterFromEl(this)" style="padding:6px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escaped}">${name}</div>`;
+    const short = name.length > 45 ? name.substring(0,45) + '…' : name;
+    return `<label data-adname="${escaped}" style="display:flex;align-items:center;gap:6px;padding:4px 2px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border);overflow:hidden" title="${escaped}"><input type="checkbox" ${checked?'checked':''} onchange="toggleAdCheckbox(this)" style="accent-color:var(--c-meta);flex-shrink:0"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${short}</span></label>`;
   }).join('');
-  dropdown.style.display = 'block';
+
+  // Update select-all state
+  const selAll = document.getElementById('adsSelectAll');
+  if (selAll) selAll.checked = selectedAdNames.length === 0;
 }
 
-function addAdFilterFromEl(el) {
-  const name = el.getAttribute('data-adname').replace(/&quot;/g,'"');
-  if (name && !selectedAdNames.includes(name)) selectedAdNames.push(name);
-  document.getElementById('adsFilterInput').value = '';
-  document.getElementById('adsFilterDropdown').style.display = 'none';
+function toggleAdCheckbox(cb) {
+  const label = cb.closest('[data-adname]');
+  const name = label.getAttribute('data-adname').replace(/&quot;/g,'"');
+  if (cb.checked) {
+    // If all are now checked, clear filter (show all)
+    selectedAdNames = selectedAdNames.filter(n => n !== name);
+    if (selectedAdNames.length === 0) { buildPage3(); return; }
+    // Otherwise do nothing (it's already not filtered)
+    if (!selectedAdNames.includes(name)) { buildPage3(); return; }
+  } else {
+    // Unchecking: if no filter active, init with all EXCEPT this one
+    if (selectedAdNames.length === 0) {
+      selectedAdNames = allAdNameOptions.filter(n => n !== name);
+    } else {
+      selectedAdNames = selectedAdNames.filter(n => n !== name);
+    }
+  }
   buildPage3();
 }
 
-function removeAdFilterIdx(idx) {
-  selectedAdNames.splice(idx, 1);
+function toggleAllAds() {
+  const selAll = document.getElementById('adsSelectAll');
+  if (selAll.checked) {
+    selectedAdNames = [];
+  } else {
+    selectedAdNames = [];
+  }
   buildPage3();
 }
 
 function clearAdsFilter() {
   selectedAdNames = [];
-  document.getElementById('adsFilterInput').value = '';
-  document.getElementById('adsFilterDropdown').style.display = 'none';
+  const input = document.getElementById('adsFilterInput');
+  if (input) input.value = '';
   buildPage3();
+}
+
+function updateFilterBtnLabel() {
+  const btn = document.getElementById('adsFilterBtnLabel');
+  if (!btn) return;
+  if (selectedAdNames.length === 0) {
+    btn.textContent = 'FILTRO DE CAMPANHA';
+  } else {
+    btn.textContent = `FILTRO (${selectedAdNames.length} selecionados)`;
+  }
 }
 
 function setAdsPlatform(platform, btn) {

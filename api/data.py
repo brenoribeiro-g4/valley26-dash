@@ -252,6 +252,7 @@ def build_data(start, end):
     vendas AS (
         SELECT
             LOWER(utm_content) as ad_lower,
+            MAX(utm_term) as adset_name_from_deal,
             COUNT(*) as vendas,
             ROUND(SUM(vl_venda), 2) as fat
         FROM g4_eventos_lancamentos.vw_mart_eventos_orders
@@ -263,6 +264,7 @@ def build_data(start, end):
     )
     SELECT
         am.ad_name, am.campaign, am.adset_id, am.ad_id,
+        COALESCE(v.adset_name_from_deal, am.adset_id) as adset_name,
         am.invest, am.clicks, am.impressoes,
         ROUND(am.clicks / NULLIF(am.impressoes, 0) * 100, 2) as ctr,
         COALESCE(v.vendas, 0) as vendas,
@@ -281,14 +283,15 @@ def build_data(start, end):
             "campaign": r[1] or "",
             "adset_id": r[2] or "",
             "ad_id": r[3] or "",
-            "invest": float(r[4] or 0),
-            "clicks": int(r[5] or 0),
-            "impressoes": int(r[6] or 0),
-            "ctr": float(r[7] or 0),
-            "vendas": int(r[8] or 0),
-            "fat": float(r[9] or 0),
-            "cpa": float(r[10] or 0),
-            "roas": float(r[11] or 0)
+            "adset_name": r[4] or "",
+            "invest": float(r[5] or 0),
+            "clicks": int(r[6] or 0),
+            "impressoes": int(r[7] or 0),
+            "ctr": float(r[8] or 0),
+            "vendas": int(r[9] or 0),
+            "fat": float(r[10] or 0),
+            "cpa": float(r[11] or 0),
+            "roas": float(r[12] or 0)
         })
 
     return {
