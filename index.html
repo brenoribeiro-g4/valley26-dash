@@ -2126,21 +2126,7 @@ function buildPage3() {
     adsData = adsData.filter(r => detectPlatform(r) === platform);
   }
 
-  // Fix vendas duplication: distribute proportionally by invest within same ad_name
-  if (useReal) {
-    const adNameInvest = {};
-    adsData.forEach(r => {
-      const key = (r.ad_name || '').toLowerCase();
-      if (!adNameInvest[key]) adNameInvest[key] = 0;
-      adNameInvest[key] += r.invest || 0;
-    });
-    adsData = adsData.map(r => {
-      const key = (r.ad_name || '').toLowerCase();
-      const totalInv = adNameInvest[key] || 1;
-      const share = (r.invest || 0) / totalInv;
-      return { ...r, vendas_adj: Math.round((r.vendas || 0) * share * 10) / 10, fat_adj: (r.fat || 0) * share };
-    });
-  }
+  // Vendas already deduplicated in SQL (GROUP BY ad_name)
 
   // Filter by Ad Name selection
   if (selectedAdNames.length > 0) {
@@ -2184,7 +2170,7 @@ function buildPage3() {
   }
 
   const maxInvest = Math.max(...adsData.map(r => r.invest || 0), 1);
-  const maxFat = Math.max(...adsData.map(r => r.fat_adj || r.fat || 0), 1);
+  const maxFat = Math.max(...adsData.map(r => r.fat || 0), 1);
 
   adsData.forEach(row => {
     const campaign = row.campaign || '—';
@@ -2192,8 +2178,8 @@ function buildPage3() {
     const adName = row.ad_name || '—';
     const invest = row.invest || 0;
     const ctr = row.ctr || 0;
-    const vendas = useReal ? (row.vendas_adj || 0) : (row.vendas || 0);
-    const fat = useReal ? (row.fat_adj || 0) : (row.fat || 0);
+    const vendas = useReal ? (row.vendas || 0) : (row.vendas || 0);
+    const fat = useReal ? (row.fat || 0) : (row.fat || 0);
     const cpa = vendas > 0 ? invest / vendas : 0;
     const roas = invest > 0 ? fat / invest : 0;
     const tr = document.createElement('tr');
@@ -2210,7 +2196,7 @@ function buildPage3() {
     tbodyC.appendChild(tr);
   });
 
-  const totC = adsData.reduce((s,r) => ({invest:s.invest+(r.invest||0), vendas:s.vendas+(useReal?(r.vendas_adj||0):(r.vendas||0)), fat:s.fat+(useReal?(r.fat_adj||0):(r.fat||0))}), {invest:0,vendas:0,fat:0});
+  const totC = adsData.reduce((s,r) => ({invest:s.invest+(r.invest||0), vendas:s.vendas+(r.vendas||0), fat:s.fat+(r.fat||0)}), {invest:0,vendas:0,fat:0});
   const trTC = document.createElement('tr');
   trTC.classList.add('total-row');
   trTC.innerHTML = `<td colspan="3">Total geral</td><td>${fmtR(totC.invest)}</td><td></td><td>${totC.vendas > 0 ? totC.vendas.toFixed(1) : '—'}</td><td>${totC.vendas>0?fmtR(totC.invest/totC.vendas):'—'}</td><td style="color:var(--pos)">${fmtR(totC.fat)}</td><td>${totC.invest>0?(totC.fat/totC.invest).toFixed(2):'—'}</td>`;
@@ -2221,7 +2207,7 @@ function buildPage3() {
   const tbodyA = document.getElementById('tbodyAds');
   tbodyA.innerHTML = '';
   if (useReal && adsData.length > 0) {
-    // Group by ad_name — use vendas_adj for correct totals
+    // Group by ad_name — use vendas for correct totals
     const adMap = {};
     adsData.forEach(row => {
       const name = row.ad_name || row.campaign || '—';
@@ -2229,8 +2215,8 @@ function buildPage3() {
       adMap[name].invest += row.invest || 0;
       adMap[name].clicks += row.clicks || 0;
       adMap[name].impressoes += row.impressoes || 0;
-      adMap[name].vendas += row.vendas_adj || 0;
-      adMap[name].fat += row.fat_adj || 0;
+      adMap[name].vendas += row.vendas || 0;
+      adMap[name].fat += row.fat || 0;
     });
     const adRows = Object.values(adMap).sort((a,b) => b.invest - a.invest);
     const maxInvA = Math.max(...adRows.map(r => r.invest), 1);

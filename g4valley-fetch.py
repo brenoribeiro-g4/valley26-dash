@@ -243,22 +243,19 @@ def fetch_ads_report():
     """Full ads report: metrics from marketing_fct + sales from orders via utm_content match.
     Includes both Meta (facebook) and Google ads campaigns."""
     sql = f"""
-    WITH ads_metrics AS (
+    WITH ads_grouped AS (
         SELECT
-            COALESCE(a.ad_name, CONCAT('ad_', m.ad_id)) as ad_name,
-            COALESCE(m.adset_id, '') as adset_name,
-            LEFT(m.utm_campaign, 100) as campaign,
-            m.adset_id,
-            m.ad_id,
+            COALESCE(a.ad_name, CONCAT('ad_', MAX(m.ad_id))) as ad_name,
+            MAX(LEFT(m.utm_campaign, 100)) as campaign,
+            MAX(m.adset_id) as adset_id,
             CASE
-                WHEN LOWER(m.utm_campaign) LIKE '%_adsfb_%' THEN 'meta'
-                WHEN LOWER(m.utm_campaign) LIKE '%_adsgg_%' THEN 'google'
+                WHEN MAX(LOWER(m.utm_campaign)) LIKE '%_adsfb_%' THEN 'meta'
+                WHEN MAX(LOWER(m.utm_campaign)) LIKE '%_adsgg_%' THEN 'google'
                 ELSE 'other'
             END as platform,
             ROUND(SUM(CASE WHEN m.event='investimento' THEN m.event_value ELSE 0 END), 2) as invest,
             ROUND(SUM(CASE WHEN m.event='clicks' THEN m.event_value ELSE 0 END), 0) as clicks,
-            ROUND(SUM(CASE WHEN m.event='impressoes' THEN m.event_value ELSE 0 END), 0) as impressoes,
-            ROUND(SUM(CASE WHEN m.event='reach' THEN m.event_value ELSE 0 END), 0) as reach
+            ROUND(SUM(CASE WHEN m.event='impressoes' THEN m.event_value ELSE 0 END), 0) as impressoes
         FROM production.gold.marketing_fct m
         LEFT JOIN production.gold.ads_details a ON m.ad_id = a.ad_id
         WHERE (
@@ -267,7 +264,8 @@ def fetch_ads_report():
         )
           AND m.event_at >= '{LOTE_START}'
           AND m.event_at <= '{LOTE_END}'
-        GROUP BY 1, 2, 3, 4, 5, 6
+        GROUP BY a.ad_name
+        HAVING SUM(CASE WHEN m.event='investimento' THEN m.event_value ELSE 0 END) > 0
     ),
     vendas AS (
         SELECT
@@ -283,24 +281,24 @@ def fetch_ads_report():
         GROUP BY 1
     )
     SELECT
-        am.ad_name,
-        COALESCE(v.adset_name_from_deal, am.adset_name) as adset_name,
-        am.campaign,
-        am.adset_id,
-        am.ad_id,
-        am.platform,
-        am.invest,
-        am.clicks,
-        am.impressoes,
-        ROUND(am.clicks / NULLIF(am.impressoes, 0) * 100, 2) as ctr,
+        ag.ad_name,
+        COALESCE(v.adset_name_from_deal, ag.adset_id) as adset_name,
+        ag.campaign,
+        ag.adset_id,
+        'n/a' as ad_id,
+        ag.platform,
+        ag.invest,
+        ag.clicks,
+        ag.impressoes,
+        ROUND(ag.clicks / NULLIF(ag.impressoes, 0) * 100, 2) as ctr,
         COALESCE(v.vendas, 0) as vendas,
         COALESCE(v.fat, 0) as fat,
-        CASE WHEN COALESCE(v.vendas,0) > 0 THEN ROUND(am.invest / v.vendas, 2) ELSE 0 END as cpa,
-        CASE WHEN am.invest > 0 THEN ROUND(COALESCE(v.fat,0) / am.invest, 2) ELSE 0 END as roas
-    FROM ads_metrics am
-    LEFT JOIN vendas v ON v.ad_lower = LOWER(am.ad_name)
-    ORDER BY am.invest DESC
-    LIMIT 100
+        CASE WHEN COALESCE(v.vendas,0) > 0 THEN ROUND(ag.invest / v.vendas, 2) ELSE 0 END as cpa,
+        CASE WHEN ag.invest > 0 THEN ROUND(COALESCE(v.fat,0) / ag.invest, 2) ELSE 0 END as roas
+    FROM ads_grouped ag
+    LEFT JOIN vendas v ON v.ad_lower = LOWER(ag.ad_name)
+    ORDER BY ag.invest DESC
+    LIMIT 80
     """
     return run_query(sql)
 
