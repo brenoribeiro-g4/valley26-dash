@@ -2317,10 +2317,9 @@ function buildPage3() {
       const cpClick = row.clicks > 0 ? row.invest / row.clicks : 0;
       const cpa = row.vendas > 0 ? row.invest / row.vendas : 0;
       const roas = row.invest > 0 ? row.fat / row.invest : 0;
-      // Build clickable ad name (link to Facebook Ads Manager)
-      const adLink = row.adId && row.adId.length > 5
-        ? `<a href="https://business.facebook.com/adsmanager/manage/ads?act=827498814964786&selected_ad_ids=${row.adId}" target="_blank" style="color:var(--c-meta);font-weight:600;text-decoration:underline;text-decoration-style:dotted" title="Ver criativo no Ads Manager">${row.name.substring(0,60)}</a>`
-        : `<span style="color:var(--c-meta);font-weight:600">${row.name.substring(0,60)}</span>`;
+      // Ad name (link disabled — needs creative_url in data pipeline)
+      // TODO: quando ads_details tiver video_url/post_url, ativar link clicavel
+      const adLink = `<span style="color:var(--c-meta);font-weight:600">${row.name.substring(0,60)}</span>`;
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td style="font-size:11px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${row.name}">${adLink}</td>
