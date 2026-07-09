@@ -1141,6 +1141,7 @@ async function fetchData(useApi = false) {
   buildDailyTable();
   buildCanalFatTable();
   updateV25V26();
+  buildProfileComparison();
   buildPage3();
   btn.textContent = '↻ Atualizar';
   btn.disabled = false;
@@ -1730,8 +1731,8 @@ function buildCompDeltaStrip() {
 }
 
 function buildProfileComparison() {
-  if (!DATA || !DATA.buyer_profiles) return;
-  const bp = DATA.buyer_profiles;
+  const src = (DATA && DATA.buyer_profiles) ? DATA : INLINE_DATA; if (!src || !src.buyer_profiles) return;
+  const bp = src.buyer_profiles;
   const profiles = ['A','B','C','D','E','F','G','H','I','J','K','L','M'];
   const colors = {A:'#22c55e',B:'#22c55e',C:'#eab308',D:'#f97316',E:'#6b7280',F:'#6b7280',G:'#6b7280',H:'#6b7280',I:'#6b7280',J:'#6b7280',K:'#6b7280',L:'#6b7280',M:'#6b7280'};
 
