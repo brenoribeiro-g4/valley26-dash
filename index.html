@@ -899,6 +899,22 @@ td:first-child { text-align: left; }
       <div class="section-desc">Hook Rate · Body Rate · custo por etapa · ordenado por investimento</div>
     </div>
     <div class="table-card">
+      <!-- Filtro por Anúncio (dropdown) -->
+      <div style="margin-bottom:12px;position:relative">
+        <button id="adsDetailFilterBtn" onclick="toggleAdsDetailFilterPanel()" style="padding:8px 16px;border-radius:6px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px">
+          <span id="adsDetailFilterBtnLabel">FILTRO DE ANÚNCIO</span>
+          <span style="font-size:10px">▼</span>
+        </button>
+        <div id="adsDetailFilterPanel" style="display:none;position:absolute;top:38px;left:0;z-index:100;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;width:360px;box-shadow:0 8px 24px rgba(0,0,0,0.4);padding:12px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--faint);cursor:pointer"><input type="checkbox" id="adsDetailSelectAll" checked onchange="toggleAllAdsDetail()" style="accent-color:var(--c-meta)"> Todos</label>
+            <span style="flex:1"></span>
+            <button onclick="clearAdsDetailFilter()" style="font-size:10px;padding:2px 6px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--faint);cursor:pointer">Limpar</button>
+          </div>
+          <input type="text" id="adsDetailFilterInput" placeholder="🔍 Digite para pesquisar" oninput="renderAdsDetailCheckboxList()" style="width:100%;padding:6px 10px;border-radius:5px;border:1px solid var(--border);background:var(--surface, var(--bg-card));color:var(--text);font-size:12px;margin-bottom:8px;box-sizing:border-box">
+          <div id="adsDetailCheckboxList" style="max-height:220px;overflow-y:auto"></div>
+        </div>
+      </div>
       <div class="table-wrap" style="max-height:500px">
         <table id="tableAds">
           <thead><tr>
@@ -1994,6 +2010,69 @@ function updateFilterBtnLabel() {
   }
 }
 
+// ─── Ad Detail Filter (second table) ───
+let selectedAdDetailNames = [];
+let allAdDetailOptions = [];
+
+function toggleAdsDetailFilterPanel() {
+  const panel = document.getElementById('adsDetailFilterPanel');
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) renderAdsDetailCheckboxList();
+}
+
+function renderAdsDetailCheckboxList() {
+  const query = (document.getElementById('adsDetailFilterInput')?.value || '').toLowerCase();
+  const list = document.getElementById('adsDetailCheckboxList');
+  const filtered = query.length > 0
+    ? allAdDetailOptions.filter(n => n.toLowerCase().includes(query))
+    : allAdDetailOptions;
+  list.innerHTML = filtered.slice(0, 50).map(name => {
+    const checked = selectedAdDetailNames.length === 0 || selectedAdDetailNames.includes(name);
+    const escaped = name.replace(/"/g,'&quot;');
+    const short = name.length > 45 ? name.substring(0,45) + '...' : name;
+    return `<label data-adname="${escaped}" style="display:flex;align-items:center;gap:6px;padding:4px 2px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border);overflow:hidden" title="${escaped}"><input type="checkbox" ${checked?'checked':''} onchange="toggleAdDetailCheckbox(this)" style="accent-color:var(--c-meta);flex-shrink:0"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${short}</span></label>`;
+  }).join('');
+  const selAll = document.getElementById('adsDetailSelectAll');
+  if (selAll) selAll.checked = selectedAdDetailNames.length === 0;
+}
+
+function toggleAdDetailCheckbox(cb) {
+  const label = cb.closest('[data-adname]');
+  const name = label.getAttribute('data-adname').replace(/&quot;/g,'"');
+  if (cb.checked) {
+    selectedAdDetailNames = selectedAdDetailNames.filter(n => n !== name);
+    if (selectedAdDetailNames.length === 0) { buildPage3(); return; }
+  } else {
+    if (selectedAdDetailNames.length === 0) {
+      selectedAdDetailNames = allAdDetailOptions.filter(n => n !== name);
+    } else {
+      selectedAdDetailNames = selectedAdDetailNames.filter(n => n !== name);
+    }
+  }
+  buildPage3();
+}
+
+function toggleAllAdsDetail() {
+  selectedAdDetailNames = [];
+  buildPage3();
+}
+
+function clearAdsDetailFilter() {
+  selectedAdDetailNames = [];
+  const input = document.getElementById('adsDetailFilterInput');
+  if (input) input.value = '';
+  buildPage3();
+}
+
+function updateAdDetailFilterBtnLabel() {
+  const btn = document.getElementById('adsDetailFilterBtnLabel');
+  if (!btn) return;
+  btn.textContent = selectedAdDetailNames.length === 0
+    ? 'FILTRO DE ANÚNCIO'
+    : `FILTRO (${selectedAdDetailNames.length} selecionados)`;
+}
+
 function setAdsPlatform(platform, btn) {
   document.querySelectorAll('#adsPlatformFilter .pill').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
@@ -2203,22 +2282,33 @@ function buildPage3() {
   tbodyC.appendChild(trTC);
   document.getElementById('tag-campaigns').textContent = adsData.length + ' linhas' + (useReal ? '' : ' · mock');
 
-  // ─── Ad detail table (grouped by ad_name, same platform/filter) ───
+  // ─── Ad detail table (grouped by ad_name, with filter + clickable link) ───
   const tbodyA = document.getElementById('tbodyAds');
   tbodyA.innerHTML = '';
   if (useReal && adsData.length > 0) {
-    // Group by ad_name — use vendas for correct totals
+    // Group by ad_name
     const adMap = {};
     adsData.forEach(row => {
       const name = row.ad_name || row.campaign || '—';
-      if (!adMap[name]) adMap[name] = { name, invest:0, clicks:0, impressoes:0, vendas:0, fat:0 };
+      if (!adMap[name]) adMap[name] = { name, adsetId: row.adset_id || '', invest:0, clicks:0, impressoes:0, vendas:0, fat:0 };
       adMap[name].invest += row.invest || 0;
       adMap[name].clicks += row.clicks || 0;
       adMap[name].impressoes += row.impressoes || 0;
       adMap[name].vendas += row.vendas || 0;
       adMap[name].fat += row.fat || 0;
+      if (!adMap[name].adsetId && row.adset_id) adMap[name].adsetId = row.adset_id;
     });
-    const adRows = Object.values(adMap).sort((a,b) => b.invest - a.invest);
+    let adRows = Object.values(adMap).sort((a,b) => b.invest - a.invest);
+
+    // Populate filter options
+    allAdDetailOptions = adRows.map(r => r.name).filter(Boolean);
+    updateAdDetailFilterBtnLabel();
+
+    // Apply filter
+    if (selectedAdDetailNames.length > 0) {
+      adRows = adRows.filter(r => selectedAdDetailNames.includes(r.name));
+    }
+
     const maxInvA = Math.max(...adRows.map(r => r.invest), 1);
     adRows.forEach(row => {
       const ctr = row.impressoes > 0 ? (row.clicks / row.impressoes * 100) : 0;
@@ -2226,9 +2316,13 @@ function buildPage3() {
       const cpClick = row.clicks > 0 ? row.invest / row.clicks : 0;
       const cpa = row.vendas > 0 ? row.invest / row.vendas : 0;
       const roas = row.invest > 0 ? row.fat / row.invest : 0;
+      // Build clickable ad name (link to Facebook Ads Manager)
+      const adLink = row.adsetId && row.adsetId.length > 5
+        ? `<a href="https://www.facebook.com/adsmanager/manage/ads?act=827498814964786&selected_adset_ids=${row.adsetId}" target="_blank" style="color:var(--c-meta);font-weight:600;text-decoration:none" title="Abrir no Ads Manager">${row.name.substring(0,60)}</a>`
+        : `<span style="color:var(--c-meta);font-weight:600">${row.name.substring(0,60)}</span>`;
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td style="font-size:11px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${row.name}"><span style="color:var(--c-meta);font-weight:600">${row.name.substring(0,60)}</span></td>
+        <td style="font-size:11px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${row.name}">${adLink}</td>
         <td style="background:${heat(row.invest, maxInvA, RGB.blue)};color:var(--text-hi);font-weight:600">${fmtR(row.invest)}</td>
         <td style="background:${heat(ctr, 5, RGB.purple)}">${ctr.toFixed(2)}%</td>
         <td style="background:${heat(row.vendas, 3, RGB.purple)};color:${row.vendas>0?'var(--text-hi)':'var(--faint)'}">${row.vendas > 0 ? row.vendas.toFixed(1) : '—'}</td>
