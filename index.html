@@ -1755,14 +1755,11 @@ function buildProfileComparison() {
   const profiles = ['A','B','C','D','E','F','G','H','I','J','K','L','M'];
   const colors = {A:'#22c55e',B:'#22c55e',C:'#eab308',D:'#f97316',E:'#6b7280',F:'#6b7280',G:'#6b7280',H:'#6b7280',I:'#6b7280',J:'#6b7280',K:'#6b7280',L:'#6b7280',M:'#6b7280'};
 
-  // Get profile data based on canal filter
-  function getProfileData(edition) {
+  function getProfileData(editionKey) {
     const canal = currentProfileCanal;
-    if (canal === 'todos') return edition.by_profile;
-    // Filter by canal
-    const byCanal = edition === bp.v26 ? bp.v26_by_canal : bp.v25_by_canal;
-    if (!byCanal) return edition.by_profile;
-    // Map filter names to utm_source keys
+    const edition = editionKey === 'v26' ? bp.v26 : bp.v25;
+    if (canal === 'todos') return edition.by_profile || {};
+    const byCanal = editionKey === 'v26' ? (bp.v26_by_canal || {}) : (bp.v25_by_canal || {});
     const canalMap = {'facebook':['facebook'],'instagram':['instagram','ig'],'hubspot':['hubspot'],'whatsapp':['whatsapp'],'google':['google'],'direct':['direct'],'suporte':['suporte'],'website':['website'],'indicacao':['indicacao']};
     const keys = canalMap[canal] || [canal];
     const merged = {};
@@ -1799,7 +1796,7 @@ function buildProfileComparison() {
   }
 
   // V25
-  const v25Data = getProfileData(bp.v25);
+  const v25Data = getProfileData('v25');
   const v25Total = getTotal(v25Data);
   const icpV25 = (v25Data.A||0)+(v25Data.B||0)+(v25Data.C||0);
   const icpPctV25 = v25Total > 0 ? (icpV25/v25Total*100).toFixed(1) : 0;
@@ -1809,7 +1806,7 @@ function buildProfileComparison() {
   renderBars('profileBarsV25', v25Data, v25Total);
 
   // V26
-  const v26Data = getProfileData(bp.v26);
+  const v26Data = getProfileData('v26');
   const v26Total = getTotal(v26Data);
   const icpV26 = (v26Data.A||0)+(v26Data.B||0)+(v26Data.C||0);
   const icpPctV26 = v26Total > 0 ? (icpV26/v26Total*100).toFixed(1) : 0;
