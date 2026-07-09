@@ -8,7 +8,7 @@ Usage:
 
 Config:
     - Edition: g4valley-1026
-    - Lote 01: 2026-07-07 → 2026-07-28
+    - Lote 01: 2026-07-07 -> 2026-07-28
     - Tables:
         - Vendas: g4_eventos_lancamentos.vw_mart_eventos_orders
         - Leads:  g4_eventos_lancamentos.vw_mart_eventos_leads_pre_inscricao
@@ -421,7 +421,7 @@ def build_json():
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Fetching data for {EDITION} (Lote 01: {LOTE_START} -> {LOTE_END})...")
 
     # 1. Totais
-    print("  → vendas totais...")
+    print("  -> vendas totais...")
     totais = fetch_vendas_totais()
     total_vendas = int(totais[0][0])
     total_fat = float(totais[0][1] or 0)
@@ -429,7 +429,7 @@ def build_json():
     ticket_medio = float(totais[0][3] or 0)
 
     # 2. By day
-    print("  → vendas por dia...")
+    print("  -> vendas por dia...")
     by_day_raw = fetch_vendas_by_day()
     by_day = {}
     for row in by_day_raw:
@@ -440,7 +440,7 @@ def build_json():
         }
 
     # 3. By canal
-    print("  → vendas por canal...")
+    print("  -> vendas por canal...")
     by_canal_raw = fetch_vendas_by_canal()
     by_canal = {}
     for row in by_canal_raw:
@@ -450,7 +450,7 @@ def build_json():
         }
 
     # 4. By day x canal
-    print("  → vendas por dia x canal...")
+    print("  -> vendas por dia x canal...")
     by_day_canal_raw = fetch_vendas_by_day_canal()
     by_day_canal = {}
     for row in by_day_canal_raw:
@@ -464,7 +464,7 @@ def build_json():
         }
 
     # 5. By hour
-    print("  → vendas por hora...")
+    print("  -> vendas por hora...")
     by_hour_raw = fetch_vendas_by_hour()
     by_hour = {}
     for row in by_hour_raw:

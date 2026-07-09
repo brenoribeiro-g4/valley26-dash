@@ -26,6 +26,7 @@ jobs:
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
           DATABRICKS_HOST: https://dbc-8acefaf9-a170.cloud.databricks.com
           DATABRICKS_WAREHOUSE_ID: bbae754ea44f67e0
+          PYTHONIOENCODING: utf-8
         run: python g4valley-fetch.py
 
       - name: Commit and push if changed
