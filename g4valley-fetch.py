@@ -304,6 +304,32 @@ def fetch_ads_report():
     return run_query(sql)
 
 
+def fetch_buyer_profiles():
+    """Buyer profiles (A-M) for V25 and V26 via JOIN orders x leads."""
+    sql_v26 = f"""
+    SELECT l.cl_perfil, COUNT(DISTINCT o.order_id) as vendas
+    FROM g4_eventos_lancamentos.vw_mart_eventos_orders o
+    JOIN g4_eventos_lancamentos.vw_mart_eventos_leads_pre_inscricao l
+      ON LOWER(o.no_email) = LOWER(l.ed_email)
+      AND l.cl_edicao_evento_pre_inscricao = '{EDITION}'
+    WHERE o.edicao_do_evento = '{EDITION}'
+      AND o.dt_event >= '{LOTE_START}' AND o.dt_event <= '{LOTE_END}'
+    GROUP BY 1 ORDER BY 2 DESC
+    """
+    sql_v25 = """
+    SELECT l.cl_perfil, COUNT(DISTINCT o.order_id) as vendas
+    FROM g4_eventos_lancamentos.vw_mart_eventos_orders o
+    JOIN g4_eventos_lancamentos.vw_mart_eventos_leads_pre_inscricao l
+      ON LOWER(o.no_email) = LOWER(l.ed_email)
+      AND l.cl_edicao_evento_pre_inscricao = 'g4valley-1125'
+    WHERE o.edicao_do_evento = 'g4valley-1125'
+      AND o.tipo_de_ingresso IN ('comum','vip','atlas','experience')
+      AND o.dt_event >= '2025-08-14' AND o.dt_event <= '2025-09-07'
+    GROUP BY 1 ORDER BY 2 DESC
+    """
+    return run_query(sql_v26), run_query(sql_v25)
+
+
 def fetch_v25_lote01():
     """Valley 2025 Lote 01 data (14/08 -> 07/09/2025, 25 dias) for comparison."""
     sql = """
@@ -604,6 +630,22 @@ def build_json():
     # YouTube (no data yet)
     perf_canal["youtube"] = calc_perf(0, 0, 0)
 
+    # 10. Buyer profiles (Page 2 comparativo)
+    print("  -> buyer profiles (V26 + V25)...")
+    bp_v26_raw, bp_v25_raw = fetch_buyer_profiles()
+    bp_v26 = {}
+    bp_v26_total = 0
+    for row in (bp_v26_raw or []):
+        if row[0]:  # skip None
+            bp_v26[row[0]] = int(row[1])
+            bp_v26_total += int(row[1])
+    bp_v25 = {}
+    bp_v25_total = 0
+    for row in (bp_v25_raw or []):
+        if row[0]:
+            bp_v25[row[0]] = int(row[1])
+            bp_v25_total += int(row[1])
+
     # Build final JSON
     output = {
         "updated_at": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
@@ -636,6 +678,10 @@ def build_json():
             "by_day": v25_by_day
         },
         "ads_report": ads_report,
+        "buyer_profiles": {
+            "v26": {"total": bp_v26_total, "by_profile": bp_v26},
+            "v25": {"total": bp_v25_total, "by_profile": bp_v25}
+        },
         "raw_rows": []
     }
 
