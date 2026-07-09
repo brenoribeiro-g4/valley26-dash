@@ -2319,7 +2319,7 @@ function buildPage3() {
       const roas = row.invest > 0 ? row.fat / row.invest : 0;
       // Build clickable ad name (link to Facebook Ads Manager)
       const adLink = row.adId && row.adId.length > 5
-        ? `<a href="https://www.facebook.com/ads/library/?id=${row.adId}" target="_blank" style="color:var(--c-meta);font-weight:600;text-decoration:underline;text-decoration-style:dotted" title="Ver anúncio na Ad Library">${row.name.substring(0,60)}</a>`
+        ? `<a href="https://business.facebook.com/adsmanager/manage/ads?act=827498814964786&selected_ad_ids=${row.adId}" target="_blank" style="color:var(--c-meta);font-weight:600;text-decoration:underline;text-decoration-style:dotted" title="Ver criativo no Ads Manager">${row.name.substring(0,60)}</a>`
         : `<span style="color:var(--c-meta);font-weight:600">${row.name.substring(0,60)}</span>`;
       const tr = document.createElement('tr');
       tr.innerHTML = `
