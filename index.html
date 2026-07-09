@@ -859,12 +859,20 @@ td:first-child { text-align: left; }
         <div><div class="card-title" id="adsPlatformLogo" style="color:var(--text-hi)">Mídia Paga (FB + GG + YT)</div></div>
         <span class="tag num" id="tag-campaigns">—</span>
       </div>
+      <!-- Filtro por Ad Name -->
+      <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="text" id="adsFilterInput" placeholder="Buscar Ad Name…" oninput="filterAdsDropdown()" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);font-size:12px;width:220px">
+        <div id="adsFilterPills" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+        <button onclick="clearAdsFilter()" style="font-size:11px;padding:4px 8px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--faint);cursor:pointer">Limpar</button>
+      </div>
+      <div id="adsFilterDropdown" style="display:none;position:relative;z-index:10">
+        <div style="position:absolute;top:0;left:0;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;max-height:200px;overflow-y:auto;width:320px;box-shadow:0 4px 12px rgba(0,0,0,0.3)" id="adsDropdownList"></div>
+      </div>
       <div class="table-wrap" style="max-height:500px">
         <table id="tableCampaigns">
           <thead><tr>
             <th>Campanha</th>
-            <th style="text-align:left">Ad Set ID</th>
-            <th style="text-align:left">Ad ID</th>
+            <th style="text-align:left">Ad Name</th>
             <th>Investimento</th>
             <th>CTR</th>
             <th>Vendas</th>
@@ -1884,6 +1892,66 @@ const ADS_MOCK_ADS = [
 ];
 
 let currentAdsPlatform = 'all';
+let selectedAdNames = [];
+let allAdNameOptions = [];
+
+function buildAdsFilterOptions(rawData, platform) {
+  // Get unique ad_names for the current platform filter
+  let filtered = rawData;
+  if (platform !== 'all') {
+    if (platform === 'meta') filtered = rawData.filter(r => (r.campaign || '').includes('_adsfb_'));
+    else if (platform === 'google') filtered = rawData.filter(r => (r.campaign || '').includes('_adsgg_'));
+    else if (platform === 'youtube') filtered = rawData.filter(r => r.platform === 'youtube');
+  }
+  allAdNameOptions = [...new Set(filtered.map(r => r.ad_name || '').filter(Boolean))].sort();
+  renderAdsPills();
+}
+
+function renderAdsPills() {
+  const container = document.getElementById('adsFilterPills');
+  container.innerHTML = selectedAdNames.map(name =>
+    `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:var(--c-meta);color:#fff;font-size:10px;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis" title="${name}">${name.substring(0,30)} <span onclick="removeAdFilter('${name.replace(/'/g,"\\'")}')" style="cursor:pointer;font-weight:bold">×</span></span>`
+  ).join('');
+}
+
+function filterAdsDropdown() {
+  const input = document.getElementById('adsFilterInput');
+  const query = input.value.toLowerCase();
+  const dropdown = document.getElementById('adsFilterDropdown');
+  const list = document.getElementById('adsDropdownList');
+
+  if (query.length < 2) { dropdown.style.display = 'none'; return; }
+
+  const matches = allAdNameOptions.filter(n =>
+    n.toLowerCase().includes(query) && !selectedAdNames.includes(n)
+  ).slice(0, 15);
+
+  if (matches.length === 0) { dropdown.style.display = 'none'; return; }
+
+  list.innerHTML = matches.map(name =>
+    `<div onclick="addAdFilter('${name.replace(/'/g,"\\'")}')" style="padding:6px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${name}">${name}</div>`
+  ).join('');
+  dropdown.style.display = 'block';
+}
+
+function addAdFilter(name) {
+  if (!selectedAdNames.includes(name)) selectedAdNames.push(name);
+  document.getElementById('adsFilterInput').value = '';
+  document.getElementById('adsFilterDropdown').style.display = 'none';
+  buildPage3();
+}
+
+function removeAdFilter(name) {
+  selectedAdNames = selectedAdNames.filter(n => n !== name);
+  buildPage3();
+}
+
+function clearAdsFilter() {
+  selectedAdNames = [];
+  document.getElementById('adsFilterInput').value = '';
+  document.getElementById('adsFilterDropdown').style.display = 'none';
+  buildPage3();
+}
 
 function setAdsPlatform(platform, btn) {
   document.querySelectorAll('#adsPlatformFilter .pill').forEach(p => p.classList.remove('active'));
@@ -2008,11 +2076,11 @@ function buildPage3() {
   // ─── Funnel ───
   buildAdsFunnel();
 
-  // ─── Campaign table — filter by platform ───
+  // ─── Campaign table — filter by platform + fix vendas dedup ───
   const useReal = !!(DATA.ads_report && DATA.ads_report.length > 0);
   let adsData = useReal ? DATA.ads_report : ADS_MOCK_CAMPAIGNS;
 
-  // Filter ads by platform (ads_report has 'platform' field or we detect from campaign name)
+  // Filter by platform
   if (useReal && platform !== 'all') {
     if (platform === 'meta') {
       adsData = adsData.filter(r => (r.platform || 'meta') === 'meta' || (r.campaign && r.campaign.includes('_adsfb_')));
@@ -2023,39 +2091,61 @@ function buildPage3() {
     }
   }
 
+  // Fix vendas duplication: distribute proportionally by invest within same ad_name
+  if (useReal) {
+    const adNameInvest = {};
+    adsData.forEach(r => {
+      const key = (r.ad_name || '').toLowerCase();
+      if (!adNameInvest[key]) adNameInvest[key] = 0;
+      adNameInvest[key] += r.invest || 0;
+    });
+    adsData = adsData.map(r => {
+      const key = (r.ad_name || '').toLowerCase();
+      const totalInv = adNameInvest[key] || 1;
+      const share = (r.invest || 0) / totalInv;
+      return { ...r, vendas_adj: Math.round((r.vendas || 0) * share * 10) / 10, fat_adj: (r.fat || 0) * share };
+    });
+  }
+
+  // Filter by Ad Name selection
+  if (selectedAdNames.length > 0) {
+    adsData = adsData.filter(r => selectedAdNames.includes(r.ad_name || ''));
+  }
+
+  // Populate Ad Name filter dropdown options
+  buildAdsFilterOptions(useReal ? DATA.ads_report : ADS_MOCK_CAMPAIGNS, platform);
+
   const tbodyC = document.getElementById('tbodyCampaigns');
   tbodyC.innerHTML = '';
   const maxInvest = Math.max(...adsData.map(r => r.invest || 0), 1);
-  const maxFat = Math.max(...adsData.map(r => r.fat || 0), 1);
+  const maxFat = Math.max(...adsData.map(r => r.fat_adj || r.fat || 0), 1);
 
   adsData.forEach(row => {
-    const campaign = row.campaign || row.ad_name || '—';
-    const adsetId = String(row.adset_id || row.adset || '—').substring(0, 14);
-    const adId = String(row.ad_id || row.ad || '—').substring(0, 14);
+    const campaign = row.campaign || '—';
+    const adName = row.ad_name || '—';
     const invest = row.invest || 0;
     const ctr = row.ctr || 0;
-    const vendas = row.vendas || 0;
-    const fat = row.fat || 0;
+    const vendas = useReal ? (row.vendas_adj || 0) : (row.vendas || 0);
+    const fat = useReal ? (row.fat_adj || 0) : (row.fat || 0);
     const cpa = vendas > 0 ? invest / vendas : 0;
     const roas = invest > 0 ? fat / invest : 0;
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td style="font-size:11px;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${campaign}">${campaign}</td>
-      <td style="text-align:left;font-size:10px;color:var(--faint)">${adsetId}</td>
-      <td style="text-align:left;font-size:10px;color:var(--faint)">${adId}</td>
+      <td style="font-size:11px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${campaign}">${campaign}</td>
+      <td style="font-size:11px;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${adName}">${adName}</td>
       <td style="background:${heat(invest, maxInvest, RGB.blue)};color:var(--text-hi);font-weight:600">${fmtR(invest)}</td>
       <td style="background:${heat(ctr, 5, RGB.purple)}">${ctr.toFixed(2)}%</td>
-      <td style="background:${heat(vendas, 3, RGB.purple)};color:${vendas>0?'var(--text-hi)':'var(--faint)'}">${vendas || '—'}</td>
+      <td style="background:${heat(vendas, 3, RGB.purple)};color:${vendas>0?'var(--text-hi)':'var(--faint)'}">${vendas > 0 ? vendas.toFixed(1) : '—'}</td>
       <td>${cpa > 0 ? fmtR(cpa) : '<span class="muted-val">—</span>'}</td>
       <td style="background:${heat(fat, maxFat, RGB.teal)};color:${fat>0?'var(--pos)':'var(--faint)'}">${fat > 0 ? fmtR(fat) : '—'}</td>
       <td style="background:${heat(roas, 3, RGB.gold)};color:${roas>0?'var(--warn)':'var(--faint)'}">${roas > 0 ? roas.toFixed(2) : '—'}</td>`;
     tbodyC.appendChild(tr);
   });
 
-  const totC = adsData.reduce((s,r) => ({invest:s.invest+(r.invest||0), vendas:s.vendas+(r.vendas||0), fat:s.fat+(r.fat||0)}), {invest:0,vendas:0,fat:0});
+  const totC = adsData.reduce((s,r) => ({invest:s.invest+(r.invest||0), vendas:s.vendas+(useReal?(r.vendas_adj||0):(r.vendas||0)), fat:s.fat+(useReal?(r.fat_adj||0):(r.fat||0))}), {invest:0,vendas:0,fat:0});
   const trTC = document.createElement('tr');
   trTC.classList.add('total-row');
-  trTC.innerHTML = `<td colspan="3">Total geral</td><td>${fmtR(totC.invest)}</td><td></td><td>${totC.vendas}</td><td>${totC.vendas>0?fmtR(totC.invest/totC.vendas):'—'}</td><td style="color:var(--pos)">${fmtR(totC.fat)}</td><td>${totC.invest>0?(totC.fat/totC.invest).toFixed(2):'—'}</td>`;
+  trTC.innerHTML = `<td colspan="2">Total geral</td><td>${fmtR(totC.invest)}</td><td></td><td>${totC.vendas > 0 ? totC.vendas.toFixed(1) : '—'}</td><td>${totC.vendas>0?fmtR(totC.invest/totC.vendas):'—'}</td><td style="color:var(--pos)">${fmtR(totC.fat)}</td><td>${totC.invest>0?(totC.fat/totC.invest).toFixed(2):'—'}</td>`;
   tbodyC.appendChild(trTC);
   document.getElementById('tag-campaigns').textContent = adsData.length + ' linhas' + (useReal ? '' : ' · mock');
 
