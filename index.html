@@ -621,6 +621,7 @@ td:first-child { text-align: left; }
               <th rowspan="2">Fat. (R/M)</th>
               <th rowspan="2">Invest. Proj.</th>
               <th rowspan="2">Invest. Real</th>
+              <th rowspan="2" style="color:var(--warn)">CPA Dia</th>
               <th colspan="4" class="group-header" style="color:var(--c-meta);border-bottom:2px solid var(--c-meta)">META ADS</th>
               <th colspan="4" class="group-header" style="color:var(--c-wppoc);border-bottom:2px solid var(--c-wppoc)">WPP ONE CLICK</th>
               <th colspan="4" class="group-header" style="color:var(--c-google);border-bottom:2px solid var(--c-google)">GOOGLE ADS</th>
@@ -1621,6 +1622,7 @@ function buildDailyTable() {
       <td style="font-weight:700"><span style="color:${hasReal?(pctVendas>=100?'var(--pos)':'var(--neg)'):'var(--faint)'}">${hasReal?fmtR(fatReal):'—'}</span><span class="muted-val"> / ${fmtR(metaDia)}</span> ${badgeHtml}</td>
       <td class="muted-val">${fmtR(p.invest)}</td>
       <td style="color:${hasReal?'var(--text-hi)':'var(--faint)'}">${hasReal?fmtR(investReal):'—'}</td>
+      <td style="color:var(--warn);font-weight:600">${hasReal && investReal > 0 && (dayData?.vendas||0) > 0 ? fmtR(investReal / dayData.vendas) : "u2014"}</td>
     `;
 
     DAILY_CHANNELS.forEach(ch => {
@@ -1629,7 +1631,7 @@ function buildDailyTable() {
       const chMeta = metaDia * ch.metaPct;
       const chPct = chMeta > 0 && chFat > 0 ? (chFat / chMeta * 100) : 0;
       const chVendas = ch.sources.reduce((s, src) => s + (dayCanals[src]?.vendas || 0), 0);
-      const chCpa = chInvest > 0 && chVendas > 0 ? chInvest / chVendas : 0;
+      const chCpa = 0; // CPA por canal nao disponivel (sem invest por canal/dia)
 
       if (hasReal && chFat > 0) {
         const pctCls = chPct >= 100 ? 'badge-pos' : 'badge-neg';
