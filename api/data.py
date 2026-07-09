@@ -88,71 +88,76 @@ MKT_FILTER = """(
 
 
 def build_data(start, end):
-    """Build the full dashboard JSON payload."""
+    """Build the full dashboard JSON payload using parallel queries."""
     from datetime import datetime, date
+    from concurrent.futures import ThreadPoolExecutor, as_completed
 
-    # 1. Vendas totais
-    rows = run_query(f"""
-        SELECT COUNT(*), ROUND(SUM(vl_venda),2), ROUND(AVG(vl_venda),2)
-        FROM g4_eventos_lancamentos.vw_mart_eventos_orders
-        WHERE edicao_do_evento = '{EDITION}' AND dt_event >= '{start}' AND dt_event <= '{end}'
-    """)
+    # Define all queries
+    queries = {
+        "totais": f"""SELECT COUNT(*), ROUND(SUM(vl_venda),2), ROUND(AVG(vl_venda),2)
+            FROM g4_eventos_lancamentos.vw_mart_eventos_orders
+            WHERE edicao_do_evento = '{EDITION}' AND dt_event >= '{start}' AND dt_event <= '{end}'""",
+        "by_day": f"""SELECT CAST(dt_event AS STRING), COUNT(*), ROUND(SUM(vl_venda),2)
+            FROM g4_eventos_lancamentos.vw_mart_eventos_orders
+            WHERE edicao_do_evento = '{EDITION}' AND dt_event >= '{start}' AND dt_event <= '{end}'
+            GROUP BY 1 ORDER BY 1""",
+        "by_canal": f"""SELECT {CHANNEL_CASE} as canal, COUNT(*), ROUND(SUM(vl_venda),2)
+            FROM g4_eventos_lancamentos.vw_mart_eventos_orders
+            WHERE edicao_do_evento = '{EDITION}' AND dt_event >= '{start}' AND dt_event <= '{end}'
+            GROUP BY 1 ORDER BY 3 DESC""",
+        "by_day_canal": f"""SELECT CAST(dt_event AS STRING), {CHANNEL_CASE} as canal, COUNT(*), ROUND(SUM(vl_venda),2)
+            FROM g4_eventos_lancamentos.vw_mart_eventos_orders
+            WHERE edicao_do_evento = '{EDITION}' AND dt_event >= '{start}' AND dt_event <= '{end}'
+            GROUP BY 1, 2 ORDER BY 1, 4 DESC""",
+        "marketing": f"""SELECT COALESCE(utm_source,'nd'), event, ROUND(SUM(event_value),2)
+            FROM production.gold.marketing_fct
+            WHERE {MKT_FILTER} AND event_at >= '{start}' AND event_at <= '{end}'
+            GROUP BY 1, 2 ORDER BY 1, 2""",
+        "invest_day": f"""SELECT CAST(event_at AS STRING), ROUND(SUM(event_value),2)
+            FROM production.gold.marketing_fct
+            WHERE {MKT_FILTER} AND event_at >= '{start}' AND event_at <= '{end}' AND event = 'investimento'
+            GROUP BY 1 ORDER BY 1""",
+        "leads": f"""SELECT COUNT(*) FROM g4_eventos_lancamentos.vw_mart_eventos_leads_pre_inscricao
+            WHERE cl_edicao_evento_pre_inscricao = '{EDITION}'"""
+    }
+
+    # Run all queries in parallel
+    results = {}
+    with ThreadPoolExecutor(max_workers=7) as executor:
+        futures = {executor.submit(run_query, sql): name for name, sql in queries.items()}
+        for future in as_completed(futures):
+            name = futures[future]
+            try:
+                results[name] = future.result()
+            except Exception:
+                results[name] = None
+
+    # Process results
+    rows = results.get("totais")
     if not rows:
         return {"error": "Query failed", "total_vendas": 0}
-
     total_vendas = int(rows[0][0])
     total_fat = float(rows[0][1] or 0)
     ticket_medio = float(rows[0][2] or 0)
 
-    # 2. By day
-    rows = run_query(f"""
-        SELECT CAST(dt_event AS STRING), COUNT(*), ROUND(SUM(vl_venda),2)
-        FROM g4_eventos_lancamentos.vw_mart_eventos_orders
-        WHERE edicao_do_evento = '{EDITION}' AND dt_event >= '{start}' AND dt_event <= '{end}'
-        GROUP BY 1 ORDER BY 1
-    """)
     by_day = {}
-    for r in (rows or []):
+    for r in (results.get("by_day") or []):
         by_day[r[0]] = {"fat": float(r[2] or 0), "vendas": int(r[1])}
 
-    # 3. By canal
-    rows = run_query(f"""
-        SELECT {CHANNEL_CASE} as canal, COUNT(*), ROUND(SUM(vl_venda),2)
-        FROM g4_eventos_lancamentos.vw_mart_eventos_orders
-        WHERE edicao_do_evento = '{EDITION}' AND dt_event >= '{start}' AND dt_event <= '{end}'
-        GROUP BY 1 ORDER BY 3 DESC
-    """)
     by_canal = {}
-    for r in (rows or []):
+    for r in (results.get("by_canal") or []):
         by_canal[r[0]] = {"fat": float(r[2] or 0), "vendas": int(r[1])}
 
-    # 4. By day x canal
-    rows = run_query(f"""
-        SELECT CAST(dt_event AS STRING), {CHANNEL_CASE} as canal, COUNT(*), ROUND(SUM(vl_venda),2)
-        FROM g4_eventos_lancamentos.vw_mart_eventos_orders
-        WHERE edicao_do_evento = '{EDITION}' AND dt_event >= '{start}' AND dt_event <= '{end}'
-        GROUP BY 1, 2 ORDER BY 1, 4 DESC
-    """)
     by_day_canal = {}
-    for r in (rows or []):
+    for r in (results.get("by_day_canal") or []):
         dia, canal = r[0], r[1]
         if dia not in by_day_canal:
             by_day_canal[dia] = {}
         by_day_canal[dia][canal] = {"fat": float(r[3] or 0), "vendas": int(r[2])}
 
-    # 5. By hour — SKIPPED in API (comes from inline data)
-    by_hour = {}
-
-    # 6. Marketing
-    rows = run_query(f"""
-        SELECT COALESCE(utm_source,'nd'), event, ROUND(SUM(event_value),2)
-        FROM production.gold.marketing_fct
-        WHERE {MKT_FILTER} AND event_at >= '{start}' AND event_at <= '{end}'
-        GROUP BY 1, 2 ORDER BY 1, 2
-    """)
     mkt_by_canal = {}
     total_invest = 0
-    for r in (rows or []):
+    for r in (results.get("marketing") or []):
         canal, event, val = r[0], r[1], float(r[2] or 0)
         if canal not in mkt_by_canal:
             mkt_by_canal[canal] = {}
@@ -160,19 +165,14 @@ def build_data(start, end):
         if event == "investimento":
             total_invest += val
 
-    # 7. Invest by day
-    rows = run_query(f"""
-        SELECT CAST(event_at AS STRING), ROUND(SUM(event_value),2)
-        FROM production.gold.marketing_fct
-        WHERE {MKT_FILTER} AND event_at >= '{start}' AND event_at <= '{end}' AND event = 'investimento'
-        GROUP BY 1 ORDER BY 1
-    """)
-    for r in (rows or []):
+    for r in (results.get("invest_day") or []):
         dia, inv = r[0], float(r[1] or 0)
         if dia in by_day:
             by_day[dia]["invest"] = round(inv, 2)
 
-    # 8. Perf windows
+    total_leads = int(results.get("leads", [[0]])[0][0]) if results.get("leads") else 0
+
+    # Perf windows
     today_str = date.today().isoformat()
     yesterday_str = (date.today().replace(day=date.today().day - 1)).isoformat() if date.today().day > 1 else today_str
     today_data = by_day.get(today_str, {"fat": 0, "vendas": 0})
@@ -198,7 +198,6 @@ def build_data(start, end):
         "ovd1": calc_perf(ovd1_fat, ovd1_vendas, invest_ovd1)
     }
 
-    # 9. Perf canal
     meta_invest = mkt_by_canal.get("facebook", {}).get("investimento", 0)
     google_invest = mkt_by_canal.get("google", {}).get("investimento", 0)
     perf_canal = {
@@ -207,16 +206,7 @@ def build_data(start, end):
         "youtube": calc_perf(0, 0, 0)
     }
 
-    # 10. Leads
-    rows = run_query(f"""
-        SELECT COUNT(*) FROM g4_eventos_lancamentos.vw_mart_eventos_leads_pre_inscricao
-        WHERE cl_edicao_evento_pre_inscricao = '{EDITION}'
-    """)
-    total_leads = int(rows[0][0]) if rows else 0
-
-    # 11. Ads Report — SKIPPED in API to avoid timeout
-    # Ad-level data comes from inline (g4valley-fetch.py) or a separate endpoint
-    ads_report = []
+    ads_report = []  # Ad-level data from inline/fetch script
 
     return {
         "updated_at": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
