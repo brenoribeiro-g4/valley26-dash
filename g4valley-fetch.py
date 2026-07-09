@@ -248,6 +248,7 @@ def fetch_ads_report():
             COALESCE(a.ad_name, CONCAT('ad_', MAX(m.ad_id))) as ad_name,
             MAX(LEFT(m.utm_campaign, 100)) as campaign,
             MAX(m.adset_id) as adset_id,
+            MAX(m.ad_id) as ad_id,
             CASE
                 WHEN MAX(LOWER(m.utm_campaign)) LIKE '%_adsfb_%' THEN 'meta'
                 WHEN MAX(LOWER(m.utm_campaign)) LIKE '%_adsgg_%' THEN 'google'
@@ -285,7 +286,7 @@ def fetch_ads_report():
         COALESCE(v.adset_name_from_deal, ag.adset_id) as adset_name,
         ag.campaign,
         ag.adset_id,
-        'n/a' as ad_id,
+        ag.ad_id,
         ag.platform,
         ag.invest,
         ag.clicks,
