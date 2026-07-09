@@ -882,6 +882,9 @@ td:first-child { text-align: left; }
             <th style="text-align:left">Ad Set Name</th>
             <th style="text-align:left">Ad Name</th>
             <th>Investimento</th>
+            <th>Impressões</th>
+            <th>Clicks</th>
+            <th>Link Clicks</th>
             <th>CTR</th>
             <th>Vendas</th>
             <th>CPA</th>
@@ -920,13 +923,14 @@ td:first-child { text-align: left; }
           <thead><tr>
             <th>Anúncio</th>
             <th>Investimento</th>
+            <th>Impressões</th>
+            <th>Clicks</th>
+            <th>Link Clicks</th>
             <th>CTR</th>
+            <th>CPC</th>
             <th>Vendas</th>
-            <th>Hook Rate</th>
-            <th>Body Rate</th>
+            <th>CPA</th>
             <th>Ticket Médio</th>
-            <th>CP. View Page</th>
-            <th>CP. Init Checkout</th>
             <th>ROAS</th>
           </tr></thead>
           <tbody id="tbodyAds"></tbody>
@@ -2256,29 +2260,35 @@ function buildPage3() {
     const adsetName = row.adset_name || row.adset_id || '—';
     const adName = row.ad_name || '—';
     const invest = row.invest || 0;
-    const ctr = row.ctr || 0;
-    const vendas = useReal ? (row.vendas || 0) : (row.vendas || 0);
-    const fat = useReal ? (row.fat || 0) : (row.fat || 0);
+    const impressoes = row.impressoes || 0;
+    const clicks = row.clicks || 0;
+    const linkClicks = row.link_clicks || row.inline_link_clicks || 0;
+    const ctr = row.ctr || (impressoes > 0 ? (clicks/impressoes*100) : 0);
+    const vendas = row.vendas || 0;
+    const fat = row.fat || 0;
     const cpa = vendas > 0 ? invest / vendas : 0;
     const roas = invest > 0 ? fat / invest : 0;
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${campaign}">${campaign}</td>
-      <td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left" title="${adsetName}">${adsetName}</td>
-      <td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left" title="${adName}">${adName}</td>
+      <td style="font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${campaign}">${campaign}</td>
+      <td style="font-size:11px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left" title="${adsetName}">${adsetName}</td>
+      <td style="font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left" title="${adName}">${adName}</td>
       <td style="background:${heat(invest, maxInvest, RGB.blue)};color:var(--text-hi);font-weight:600">${fmtR(invest)}</td>
-      <td style="background:${heat(ctr, 5, RGB.purple)}">${ctr.toFixed(2)}%</td>
-      <td style="background:${heat(vendas, 3, RGB.purple)};color:${vendas>0?'var(--text-hi)':'var(--faint)'}">${vendas > 0 ? vendas.toFixed(1) : '—'}</td>
-      <td>${cpa > 0 ? fmtR(cpa) : '<span class="muted-val">—</span>'}</td>
+      <td>${impressoes > 0 ? fmt(impressoes) : '—'}</td>
+      <td>${clicks > 0 ? fmt(clicks) : '—'}</td>
+      <td>${linkClicks > 0 ? fmt(linkClicks) : '—'}</td>
+      <td style="background:${heat(ctr, 5, RGB.purple)}">${ctr > 0 ? ctr.toFixed(2)+'%' : '—'}</td>
+      <td style="background:${heat(vendas, 3, RGB.purple)};color:${vendas>0?'var(--text-hi)':'var(--faint)'}">${vendas > 0 ? vendas : '—'}</td>
+      <td>${cpa > 0 ? fmtR(cpa) : '—'}</td>
       <td style="background:${heat(fat, maxFat, RGB.teal)};color:${fat>0?'var(--pos)':'var(--faint)'}">${fat > 0 ? fmtR(fat) : '—'}</td>
       <td style="background:${heat(roas, 3, RGB.gold)};color:${roas>0?'var(--warn)':'var(--faint)'}">${roas > 0 ? roas.toFixed(2) : '—'}</td>`;
     tbodyC.appendChild(tr);
   });
 
-  const totC = adsData.reduce((s,r) => ({invest:s.invest+(r.invest||0), vendas:s.vendas+(r.vendas||0), fat:s.fat+(r.fat||0)}), {invest:0,vendas:0,fat:0});
+  const totC = adsData.reduce((s,r) => ({invest:s.invest+(r.invest||0), vendas:s.vendas+(r.vendas||0), fat:s.fat+(r.fat||0), impressoes:s.impressoes+(r.impressoes||0), clicks:s.clicks+(r.clicks||0)}), {invest:0,vendas:0,fat:0,impressoes:0,clicks:0});
   const trTC = document.createElement('tr');
   trTC.classList.add('total-row');
-  trTC.innerHTML = `<td colspan="3">Total geral</td><td>${fmtR(totC.invest)}</td><td></td><td>${totC.vendas > 0 ? totC.vendas.toFixed(1) : '—'}</td><td>${totC.vendas>0?fmtR(totC.invest/totC.vendas):'—'}</td><td style="color:var(--pos)">${fmtR(totC.fat)}</td><td>${totC.invest>0?(totC.fat/totC.invest).toFixed(2):'—'}</td>`;
+  trTC.innerHTML = `<td colspan="3">Total geral</td><td>${fmtR(totC.invest)}</td><td>${fmt(totC.impressoes)}</td><td>${fmt(totC.clicks)}</td><td></td><td>${totC.impressoes>0?(totC.clicks/totC.impressoes*100).toFixed(2)+'%':''}</td><td>${totC.vendas}</td><td>${totC.vendas>0?fmtR(totC.invest/totC.vendas):'—'}</td><td style="color:var(--pos)">${fmtR(totC.fat)}</td><td>${totC.invest>0?(totC.fat/totC.invest).toFixed(2):'—'}</td>`;
   tbodyC.appendChild(trTC);
   document.getElementById('tag-campaigns').textContent = adsData.length + ' linhas' + (useReal ? '' : ' · mock');
 
@@ -2290,10 +2300,11 @@ function buildPage3() {
     const adMap = {};
     adsData.forEach(row => {
       const name = row.ad_name || row.campaign || '—';
-      if (!adMap[name]) adMap[name] = { name, permalink: row.permalink || '', adsetId: row.adset_id || '', invest:0, clicks:0, impressoes:0, vendas:0, fat:0 };
+      if (!adMap[name]) adMap[name] = { name, permalink: row.permalink || '', adsetId: row.adset_id || '', invest:0, clicks:0, impressoes:0, linkClicks:0, vendas:0, fat:0 };
       adMap[name].invest += row.invest || 0;
       adMap[name].clicks += row.clicks || 0;
       adMap[name].impressoes += row.impressoes || 0;
+      adMap[name].linkClicks += row.link_clicks || row.inline_link_clicks || 0;
       adMap[name].vendas += row.vendas || 0;
       adMap[name].fat += row.fat || 0;
       if (!adMap[name].permalink && row.permalink) adMap[name].permalink = row.permalink;
@@ -2313,33 +2324,35 @@ function buildPage3() {
     const maxInvA = Math.max(...adRows.map(r => r.invest), 1);
     adRows.forEach(row => {
       const ctr = row.impressoes > 0 ? (row.clicks / row.impressoes * 100) : 0;
+      const linkClicks = row.linkClicks || 0;
+      const cpc = row.clicks > 0 ? row.invest / row.clicks : 0;
       const ticket = row.vendas > 0 ? row.fat / row.vendas : 0;
-      const cpClick = row.clicks > 0 ? row.invest / row.clicks : 0;
       const cpa = row.vendas > 0 ? row.invest / row.vendas : 0;
       const roas = row.invest > 0 ? row.fat / row.invest : 0;
-      // Ad name with Instagram permalink (from creatives_details.raw_attributes)
+      // Ad name with Instagram permalink
       const permalink = row.permalink || '';
       const adLink = permalink
         ? `<a href="${permalink}" target="_blank" style="color:var(--c-meta);font-weight:600;text-decoration:underline;text-decoration-style:dotted" title="Ver vídeo no Instagram">${row.name.substring(0,60)}</a>`
         : `<span style="color:var(--c-meta);font-weight:600">${row.name.substring(0,60)}</span>`;
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td style="font-size:11px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${row.name}">${adLink}</td>
+        <td style="font-size:11px;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${row.name}">${adLink}</td>
         <td style="background:${heat(row.invest, maxInvA, RGB.blue)};color:var(--text-hi);font-weight:600">${fmtR(row.invest)}</td>
-        <td style="background:${heat(ctr, 5, RGB.purple)}">${ctr.toFixed(2)}%</td>
-        <td style="background:${heat(row.vendas, 3, RGB.purple)};color:${row.vendas>0?'var(--text-hi)':'var(--faint)'}">${row.vendas > 0 ? row.vendas.toFixed(1) : '—'}</td>
-        <td>—</td>
-        <td>—</td>
-        <td>${ticket > 0 ? fmtR(ticket) : '<span class="muted-val">—</span>'}</td>
-        <td>${cpClick > 0 ? fmtR(cpClick) : '—'}</td>
-        <td>${cpa > 0 ? fmtR(cpa) : '<span class="muted-val">—</span>'}</td>
+        <td>${row.impressoes > 0 ? fmt(row.impressoes) : '—'}</td>
+        <td>${row.clicks > 0 ? fmt(row.clicks) : '—'}</td>
+        <td>${linkClicks > 0 ? fmt(linkClicks) : '—'}</td>
+        <td style="background:${heat(ctr, 5, RGB.purple)}">${ctr > 0 ? ctr.toFixed(2)+'%' : '—'}</td>
+        <td>${cpc > 0 ? fmtR(cpc) : '—'}</td>
+        <td style="background:${heat(row.vendas, 3, RGB.purple)};color:${row.vendas>0?'var(--text-hi)':'var(--faint)'}">${row.vendas > 0 ? row.vendas : '—'}</td>
+        <td>${cpa > 0 ? fmtR(cpa) : '—'}</td>
+        <td>${ticket > 0 ? fmtR(ticket) : '—'}</td>
         <td style="background:${heat(roas, 3, RGB.gold)};color:${roas>0?'var(--warn)':'var(--faint)'}">${roas > 0 ? roas.toFixed(2) : '—'}</td>`;
       tbodyA.appendChild(tr);
     });
-    const totA = adRows.reduce((s,r) => ({invest:s.invest+r.invest, vendas:s.vendas+r.vendas, fat:s.fat+r.fat}), {invest:0,vendas:0,fat:0});
+    const totA = adRows.reduce((s,r) => ({invest:s.invest+r.invest, vendas:s.vendas+r.vendas, fat:s.fat+r.fat, impressoes:s.impressoes+r.impressoes, clicks:s.clicks+r.clicks}), {invest:0,vendas:0,fat:0,impressoes:0,clicks:0});
     const trTA = document.createElement('tr');
     trTA.classList.add('total-row');
-    trTA.innerHTML = `<td>Total geral</td><td>${fmtR(totA.invest)}</td><td></td><td>${totA.vendas > 0 ? totA.vendas.toFixed(1) : '—'}</td><td></td><td></td><td></td><td></td><td></td><td>${totA.invest>0?(totA.fat/totA.invest).toFixed(2):'—'}</td>`;
+    trTA.innerHTML = `<td>Total geral</td><td>${fmtR(totA.invest)}</td><td>${fmt(totA.impressoes)}</td><td>${fmt(totA.clicks)}</td><td></td><td>${totA.impressoes>0?(totA.clicks/totA.impressoes*100).toFixed(2)+'%':''}</td><td>${totA.clicks>0?fmtR(totA.invest/totA.clicks):''}</td><td>${totA.vendas}</td><td>${totA.vendas>0?fmtR(totA.invest/totA.vendas):''}</td><td></td><td>${totA.invest>0?(totA.fat/totA.invest).toFixed(2):''}</td>`;
     tbodyA.appendChild(trTA);
   } else if (!useReal) {
     // Fallback mock
