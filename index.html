@@ -1909,7 +1909,7 @@ const RGB = { blue:'91,156,245', purple:'164,140,242', teal:'69,193,161', gold:'
 function buildAdsFunnel() {
   if (!DATA || !DATA.mkt_by_canal) return;
   const platform = currentAdsPlatform;
-  let impressoes = 0, clicks = 0, invest = 0, vendas = 0;
+  let impressoes = 0, clicks = 0, viewPage = 0, initCheckout = 0, invest = 0, vendas = 0;
 
   const fb = DATA.mkt_by_canal.facebook || {};
   const gg = DATA.mkt_by_canal.google || {};
@@ -1917,14 +1917,17 @@ function buildAdsFunnel() {
   if (platform === 'all' || platform === 'meta') {
     impressoes += fb.impressoes || 0;
     clicks += fb.clicks || 0;
+    viewPage += fb.inline_link_clicks || fb.landing_page_views || 0;
+    initCheckout += fb.initiate_checkout || fb.checkout || 0;
     invest += fb.investimento || 0;
   }
   if (platform === 'all' || platform === 'google') {
     impressoes += gg.impressoes || 0;
     clicks += gg.clicks || 0;
+    viewPage += gg.inline_link_clicks || gg.landing_page_views || 0;
+    initCheckout += gg.initiate_checkout || gg.checkout || 0;
     invest += gg.investimento || 0;
   }
-  // YouTube: no spend data yet
 
   // Vendas from perf_canal
   if (platform === 'all') {
@@ -1937,18 +1940,29 @@ function buildAdsFunnel() {
     vendas = DATA.perf_canal?.youtube?.vendas || 0;
   }
 
+  // Custos unitários
   const cpm = impressoes > 0 ? (invest / impressoes * 1000) : 0;
   const cpc = clicks > 0 ? (invest / clicks) : 0;
+  const cpView = viewPage > 0 ? (invest / viewPage) : 0;
+  const cpInit = initCheckout > 0 ? (invest / initCheckout) : 0;
   const cpa = vendas > 0 ? (invest / vendas) : 0;
+
+  // Conversões entre etapas
   const ctrPct = impressoes > 0 ? (clicks / impressoes * 100) : 0;
-  const convPct = clicks > 0 ? (vendas / clicks * 100) : 0;
+  const clickToView = clicks > 0 ? (viewPage / clicks * 100) : 0;
+  const viewToInit = viewPage > 0 ? (initCheckout / viewPage * 100) : 0;
+  const initToSale = initCheckout > 0 ? (vendas / initCheckout * 100) : 0;
+  // fallback: clicks → vendas if no mid-funnel
+  const clickToSale = clicks > 0 ? (vendas / clicks * 100) : 0;
 
   const stages = [
     { label:'Impressões', value: impressoes, cost:`CPM <strong>${fmtR(cpm)}</strong>`, conv: ctrPct > 0 ? ctrPct.toFixed(2) + '%' : null },
-    { label:'Clicks', value: clicks, cost:`CPC <strong>${fmtR(cpc)}</strong>`, conv: convPct > 0 ? convPct.toFixed(3) + '%' : null },
+    { label:'Clicks no Anúncio', value: clicks, cost:`CPC <strong>${fmtR(cpc)}</strong>`, conv: viewPage > 0 ? (clickToView.toFixed(1) + '%') : null },
+    { label:'Visitas na Página', value: viewPage, cost:`CP View <strong>${cpView > 0 ? fmtR(cpView) : '—'}</strong>`, conv: initCheckout > 0 ? (viewToInit.toFixed(2) + '%') : (vendas > 0 && viewPage > 0 ? (vendas/viewPage*100).toFixed(2)+'%' : null) },
+    { label:'Visitas no Checkout', value: initCheckout, cost:`CP Init <strong>${cpInit > 0 ? fmtR(cpInit) : '—'}</strong>`, conv: initCheckout > 0 && vendas > 0 ? (initToSale.toFixed(1) + '%') : null },
     { label:'Vendas', value: vendas, cost:`CPA <strong>${fmtR(cpa)}</strong>`, conv: null, final: true },
   ];
-  const widths = [100, 72, 40];
+  const widths = [100, 82, 64, 48, 34];
   document.getElementById('adsFunnel').innerHTML = stages.map((s, i) => `
     <div class="funnel-row">
       <div class="funnel-bar ${s.final ? 'final' : ''}" style="width:${widths[i]}%">
