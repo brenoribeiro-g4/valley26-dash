@@ -1595,7 +1595,23 @@ function updateV25V26() {
     V25.vendas = DATA.v25_lote01.vendas || V25.vendas;
     V25.ticket = DATA.v25_lote01.ticket_medio || V25.ticket;
   }
+
+  // Update V26 DOM cards
+  const el = id => document.getElementById(id);
+  if (el('v26-fat')) el('v26-fat').textContent = fmtR(V26.fat);
+  if (el('v26-vendas')) el('v26-vendas').textContent = fmt(V26.vendas);
+  if (el('v26-cpa')) el('v26-cpa').textContent = V26.cpa > 0 ? fmtR(V26.cpa) : '\u2014';
+  if (el('v26-invest')) el('v26-invest').textContent = fmtR(V26.invest);
+  if (el('v26-ticket')) el('v26-ticket').textContent = fmtR(V26.ticket);
+  if (el('v26-roas')) el('v26-roas').textContent = V26.roas > 0 ? fmtRoas(V26.roas) : '\u2014';
+
+  // Update V25 DOM cards
+  if (el('v25-fat')) el('v25-fat').textContent = fmtR(V25.fat);
+  if (el('v25-vendas')) el('v25-vendas').textContent = fmt(V25.vendas);
+  if (el('v25-ticket')) el('v25-ticket').textContent = fmtR(V25.ticket);
+
   buildCompDeltaStrip();
+  buildCompCharts();
 }
 
 const BENCH_V25 = [
