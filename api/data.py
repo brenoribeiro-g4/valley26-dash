@@ -140,22 +140,8 @@ def build_data(start, end):
             by_day_canal[dia] = {}
         by_day_canal[dia][canal] = {"fat": float(r[3] or 0), "vendas": int(r[2])}
 
-    # 5. By hour
-    rows = run_query(f"""
-        SELECT HOUR(ts_event), {CHANNEL_CASE} as canal, COUNT(*), ROUND(SUM(vl_venda),2)
-        FROM g4_eventos_lancamentos.vw_mart_eventos_orders
-        WHERE edicao_do_evento = '{EDITION}' AND dt_event >= '{start}' AND dt_event <= '{end}'
-        GROUP BY 1, 2 ORDER BY 1, 4 DESC
-    """)
+    # 5. By hour — SKIPPED in API (comes from inline data)
     by_hour = {}
-    for r in (rows or []):
-        h = str(int(r[0])).zfill(2)
-        canal, vendas, fat = r[1], int(r[2]), float(r[3] or 0)
-        if h not in by_hour:
-            by_hour[h] = {"fat": 0, "vendas": 0, "by_canal": {}}
-        by_hour[h]["fat"] += fat
-        by_hour[h]["vendas"] += vendas
-        by_hour[h]["by_canal"][canal] = fat
 
     # 6. Marketing
     rows = run_query(f"""
@@ -228,71 +214,9 @@ def build_data(start, end):
     """)
     total_leads = int(rows[0][0]) if rows else 0
 
-    # 11. Ads Report (ad-level metrics + sales attribution)
-    # Simplified query to avoid timeout — platform detection done in JS
+    # 11. Ads Report — SKIPPED in API to avoid timeout
+    # Ad-level data comes from inline (g4valley-fetch.py) or a separate endpoint
     ads_report = []
-    ads_rows = run_query(f"""
-    WITH ads_metrics AS (
-        SELECT
-            a.ad_name,
-            LEFT(m.utm_campaign, 100) as campaign,
-            m.adset_id,
-            m.ad_id,
-            ROUND(SUM(CASE WHEN m.event='investimento' THEN m.event_value ELSE 0 END), 2) as invest,
-            ROUND(SUM(CASE WHEN m.event='clicks' THEN m.event_value ELSE 0 END), 0) as clicks,
-            ROUND(SUM(CASE WHEN m.event='impressoes' THEN m.event_value ELSE 0 END), 0) as impressoes
-        FROM production.gold.marketing_fct m
-        LEFT JOIN production.gold.ads_details a ON m.ad_id = a.ad_id
-        WHERE (LOWER(m.utm_campaign) LIKE '%_adsfb_gtm_g4valley26_vendas_carrinhoaberto_alwayson%'
-               OR LOWER(m.utm_campaign) LIKE '%_adsgg_gtm_g4valley26_carrinhoaberto_vendas_%')
-          AND m.event_at >= '{start}'
-          AND m.event_at <= '{end}'
-        GROUP BY 1, 2, 3, 4
-    ),
-    vendas AS (
-        SELECT
-            LOWER(utm_content) as ad_lower,
-            MAX(utm_term) as adset_name_from_deal,
-            COUNT(*) as vendas,
-            ROUND(SUM(vl_venda), 2) as fat
-        FROM g4_eventos_lancamentos.vw_mart_eventos_orders
-        WHERE edicao_do_evento = '{EDITION}'
-          AND dt_event >= '{start}'
-          AND dt_event <= '{end}'
-          AND (utm_source = 'facebook' OR utm_source = 'google')
-        GROUP BY 1
-    )
-    SELECT
-        am.ad_name, am.campaign, am.adset_id, am.ad_id,
-        COALESCE(v.adset_name_from_deal, am.adset_id) as adset_name,
-        am.invest, am.clicks, am.impressoes,
-        ROUND(am.clicks / NULLIF(am.impressoes, 0) * 100, 2) as ctr,
-        COALESCE(v.vendas, 0) as vendas,
-        COALESCE(v.fat, 0) as fat,
-        CASE WHEN COALESCE(v.vendas,0) > 0 THEN ROUND(am.invest / v.vendas, 2) ELSE 0 END as cpa,
-        CASE WHEN am.invest > 0 THEN ROUND(COALESCE(v.fat,0) / am.invest, 2) ELSE 0 END as roas
-    FROM ads_metrics am
-    LEFT JOIN vendas v ON v.ad_lower = LOWER(am.ad_name)
-    WHERE am.invest > 0
-    ORDER BY am.invest DESC
-    LIMIT 100
-    """)
-    for r in (ads_rows or []):
-        ads_report.append({
-            "ad_name": r[0] or "",
-            "campaign": r[1] or "",
-            "adset_id": r[2] or "",
-            "ad_id": r[3] or "",
-            "adset_name": r[4] or "",
-            "invest": float(r[5] or 0),
-            "clicks": int(r[6] or 0),
-            "impressoes": int(r[7] or 0),
-            "ctr": float(r[8] or 0),
-            "vendas": int(r[9] or 0),
-            "fat": float(r[10] or 0),
-            "cpa": float(r[11] or 0),
-            "roas": float(r[12] or 0)
-        })
 
     return {
         "updated_at": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),

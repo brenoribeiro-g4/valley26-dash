@@ -1057,8 +1057,13 @@ async function fetchData(useApi = false) {
       // Live API call to Databricks via serverless function
       const res = await fetch(`/api/data?start=${start}&end=${end}`);
       if (!res.ok) throw new Error('API error: ' + res.status);
-      DATA = await res.json();
-      if (DATA.error) throw new Error(DATA.error);
+      const apiData = await res.json();
+      if (apiData.error) throw new Error(apiData.error);
+      // Merge: API provides fresh core data; inline provides ads_report/by_hour
+      DATA = { ...INLINE_DATA, ...apiData };
+      // Keep inline ads_report and by_hour if API doesn't provide them
+      if (!DATA.ads_report || DATA.ads_report.length === 0) DATA.ads_report = INLINE_DATA?.ads_report || [];
+      if (!DATA.by_hour || Object.keys(DATA.by_hour).length === 0) DATA.by_hour = INLINE_DATA?.by_hour || {};
     } else {
       // Local: try JSON file first
       const res = await fetch('./g4valley-data.json?t=' + Date.now());
