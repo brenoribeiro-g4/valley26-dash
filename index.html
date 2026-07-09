@@ -2117,10 +2117,31 @@ function buildPage3() {
   const tbodyC = document.getElementById('tbodyCampaigns');
   tbodyC.innerHTML = '';
 
-  if (adsData.length === 0) {
-    tbodyC.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--faint);padding:20px">Sem dados de campanhas para esta plataforma</td></tr>';
+  // If no ad-level data but perf_canal has data, show aggregated row
+  if (adsData.length === 0 && platform !== 'all') {
+    const pcKey = platform === 'meta' ? 'meta_ads' : platform;
+    const pcData = DATA.perf_canal?.[pcKey];
+    if (pcData && (pcData.vendas > 0 || pcData.invest > 0)) {
+      // Show aggregated row from perf_canal
+      const roas = pcData.invest > 0 ? pcData.fat / pcData.invest : 0;
+      tbodyC.innerHTML = `<tr>
+        <td style="color:var(--text-hi)">(Agregado — sem detalhe por anúncio)</td>
+        <td style="color:var(--faint)">—</td><td style="color:var(--faint)">—</td>
+        <td style="font-weight:600">${fmtR(pcData.invest)}</td>
+        <td>—</td>
+        <td style="color:var(--text-hi)">${pcData.vendas}</td>
+        <td>${pcData.cpa > 0 ? fmtR(pcData.cpa) : '—'}</td>
+        <td style="color:var(--pos)">${fmtR(pcData.fat)}</td>
+        <td style="color:var(--warn)">${roas > 0 ? roas.toFixed(2) : '—'}</td>
+      </tr>`;
+      document.getElementById('tag-campaigns').textContent = '1 linha (agregado)';
+      // Ad table also shows aggregated
+      const tbodyA2 = document.getElementById('tbodyAds');
+      tbodyA2.innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--faint);padding:16px">Detalhamento por anúncio não disponível — dados agregados nos KPIs acima</td></tr>`;
+      return;
+    }
+    tbodyC.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--faint);padding:20px">Sem dados para esta plataforma</td></tr>';
     document.getElementById('tag-campaigns').textContent = '0 linhas';
-    // Still render empty ad table
     const tbodyA2 = document.getElementById('tbodyAds');
     tbodyA2.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--faint);padding:20px">Sem dados de anúncios para esta plataforma</td></tr>';
     return;
