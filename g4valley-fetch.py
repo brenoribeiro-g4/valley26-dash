@@ -292,6 +292,40 @@ def fetch_ads_report():
     return run_query(sql)
 
 
+def fetch_v25_lote01():
+    """Valley 2025 Lote 01 data (14/08 -> 07/09/2025, 25 dias) for comparison."""
+    sql = """
+    SELECT
+        COUNT(*) as vendas,
+        ROUND(SUM(vl_venda), 2) as fat,
+        ROUND(AVG(vl_venda), 2) as ticket
+    FROM g4_eventos_lancamentos.vw_mart_eventos_orders
+    WHERE edicao_do_evento = 'g4valley-1125'
+      AND tipo_de_ingresso IN ('comum', 'vip', 'atlas', 'experience')
+      AND dt_event >= '2025-08-14'
+      AND dt_event <= '2025-09-07'
+    """
+    return run_query(sql)
+
+
+def fetch_v25_by_day():
+    """Valley 2025 Lote 01 daily breakdown."""
+    sql = """
+    SELECT
+        CAST(dt_event AS STRING) as dia,
+        COUNT(*) as vendas,
+        ROUND(SUM(vl_venda), 2) as fat
+    FROM g4_eventos_lancamentos.vw_mart_eventos_orders
+    WHERE edicao_do_evento = 'g4valley-1125'
+      AND tipo_de_ingresso IN ('comum', 'vip', 'atlas', 'experience')
+      AND dt_event >= '2025-08-14'
+      AND dt_event <= '2025-09-07'
+    GROUP BY 1
+    ORDER BY 1
+    """
+    return run_query(sql)
+
+
 def fetch_meta_ads_vendas():
     """Meta Ads vendas: source=facebook + specific campaigns only."""
     sql = f"""
@@ -461,7 +495,19 @@ def build_json():
             by_day[dia] = {"fat": 0, "vendas": 0, "bruto": 0, "invest": round(inv, 2)}
 
     # 7. Leads
-    # 8. Ads Report (Page 3)
+    # 8. Valley 2025 Lote 01 (Page 2 comparison)
+    print("  -> valley 2025 lote 01 (comparativo)...")
+    v25_totals = fetch_v25_lote01()
+    v25_vendas = int(v25_totals[0][0]) if v25_totals else 0
+    v25_fat = float(v25_totals[0][1] or 0) if v25_totals else 0
+    v25_ticket = float(v25_totals[0][2] or 0) if v25_totals else 0
+
+    v25_by_day_raw = fetch_v25_by_day()
+    v25_by_day = {}
+    for r in (v25_by_day_raw or []):
+        v25_by_day[r[0]] = {"fat": float(r[2] or 0), "vendas": int(r[1])}
+
+    # 9. Ads Report (Page 3)
     print("  -> ads report (campaigns x vendas)...")
     ads_raw = fetch_ads_report()
     ads_report = []
@@ -567,6 +613,14 @@ def build_json():
         "perf": perf,
         "perf_canal": perf_canal,
         "mkt_by_canal": {k: {kk: round(vv, 2) for kk, vv in v.items()} for k, v in mkt_by_canal.items()},
+        "v25_lote01": {
+            "vendas": v25_vendas,
+            "fat": v25_fat,
+            "ticket_medio": v25_ticket,
+            "dias": 25,
+            "periodo": "14/08/2025 - 07/09/2025",
+            "by_day": v25_by_day
+        },
         "ads_report": ads_report,
         "raw_rows": []
     }
