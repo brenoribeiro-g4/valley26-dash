@@ -4,6 +4,9 @@ on:
   schedule:
     - cron: '*/15 * * * *'  # Every 15 minutes
   workflow_dispatch: {}      # Manual trigger
+  push:
+    branches: [main]
+    paths: ['.github/workflows/refresh-data.yml']  # Only on workflow file changes
 
 jobs:
   refresh:
