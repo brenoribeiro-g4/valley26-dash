@@ -745,41 +745,20 @@ td:first-child { text-align: left; }
 
     <!-- ─── MÊS A MÊS ─── -->
     <div class="section-header">
-      <div class="section-label">Comparação Semanal — Valley 2026</div>
-      <div class="section-desc">Performance semanal dentro da campanha · faturamento · investimento · ROAS</div>
+      <div class="section-label">Comparação Mensal — Valley 2026</div>
+      <div class="section-desc">Evolução mensal de vendas de ingressos · Julho → Outubro · Faturamento · Investimento · ROAS</div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" class="comp-cols">
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px" class="comp-cols">
       <div class="card">
         <div class="card-header">
-          <div><div class="card-title">Faturamento Semanal</div><div class="card-sub">Barras = Fat. e Invest. por semana</div></div>
+          <div><div class="card-title">Faturamento Mensal — Ingressos Valley 2026</div><div class="card-sub">Barras = Faturamento e Investimento por mês · Linha = ROAS</div></div>
+          <span class="tag">g4valley-1026</span>
         </div>
-        <canvas id="chartMoM" height="130"></canvas>
+        <canvas id="chartMoM" height="140"></canvas>
       </div>
       <div class="card">
-        <div class="card-header"><div><div class="card-title">Resumo por Semana</div><div class="card-sub">Métricas consolidadas por período</div></div></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div style="background:var(--surface-2);border-radius:10px;padding:14px;border-left:3px solid var(--c-wppoc)">
-            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;font-weight:650">Semana 1 · 24–30/06</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" class="num">
-              <div><div class="perf-metric-label">Faturamento</div><div class="perf-metric-value">R$ 271,2k</div></div>
-              <div><div class="perf-metric-label">Invest.</div><div class="perf-metric-value">R$ 111,1k</div></div>
-              <div><div class="perf-metric-label">Vendas</div><div class="perf-metric-value">31</div></div>
-              <div><div class="perf-metric-label">ROAS</div><div class="perf-metric-value pos">2,44×</div></div>
-            </div>
-          </div>
-          <div style="background:var(--surface-2);border-radius:10px;padding:14px;border-left:3px solid var(--pos)">
-            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;font-weight:650">Semana 2 · 01–07/07</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" class="num">
-              <div><div class="perf-metric-label">Faturamento</div><div class="perf-metric-value">R$ 189,3k</div></div>
-              <div><div class="perf-metric-label">Invest.</div><div class="perf-metric-value">R$ 97,0k</div></div>
-              <div><div class="perf-metric-label">Vendas</div><div class="perf-metric-value">21</div></div>
-              <div><div class="perf-metric-label">ROAS</div><div class="perf-metric-value neg">1,95×</div></div>
-            </div>
-          </div>
-        </div>
-        <div class="insight">
-          <strong>Insight:</strong> Semana 1 teve ROAS superior (+25%) com ticket médio mais alto nos primeiros dias (lançamento). Semana 2 estabilizando em ~R$ 27k/dia.
-        </div>
+        <div class="card-header"><div><div class="card-title">Resumo por Mês</div><div class="card-sub">Métricas até o momento</div></div></div>
+        <div id="monthSummaryCards" style="display:flex;flex-direction:column;gap:10px"></div>
       </div>
     </div>
 
@@ -1749,27 +1728,65 @@ function buildCanalFatTable() {
   document.getElementById('tag-canal-fat').textContent = canais.length + ' canais';
 }
 
+let chartMoMInst;
 function buildMoMChart() {
+  if (!DATA) return;
   const ctx = document.getElementById('chartMoM');
   if (!ctx) return;
-  new Chart(ctx.getContext('2d'), {
+  // Agregar por mes
+  const months = {};
+  Object.entries(DATA.by_day).forEach(([dia, d]) => {
+    const mes = dia.substring(0, 7);
+    if (!months[mes]) months[mes] = {fat:0, invest:0, vendas:0};
+    months[mes].fat += d.fat || 0;
+    months[mes].invest += d.invest || 0;
+    months[mes].vendas += d.vendas || 0;
+  });
+  const allMonths = ['2026-07','2026-08','2026-09','2026-10'];
+  const labels = ['Jul/26','Ago/26','Set/26','Out/26'];
+  const fatData = allMonths.map(m => months[m]?.fat || 0);
+  const invData = allMonths.map(m => months[m]?.invest || 0);
+  const roasData = allMonths.map(m => months[m]?.invest > 0 ? months[m].fat / months[m].invest : 0);
+
+  if (chartMoMInst) chartMoMInst.destroy();
+  chartMoMInst = new Chart(ctx.getContext('2d'), {
     type: 'bar',
     data: {
-      labels: ['Semana 1 · 24–30/06', 'Semana 2 · 01–07/07'],
+      labels: labels,
       datasets: [
-        { label:'Faturamento', data: [271936, 188603], backgroundColor: ['rgba(116,170,243,0.65)','rgba(64,201,138,0.65)'], borderRadius: 5, barPercentage: 0.55 },
-        { label:'Investimento', data: [111952, 96141], backgroundColor: ['rgba(116,170,243,0.22)','rgba(64,201,138,0.22)'], borderRadius: 5, barPercentage: 0.55 }
+        { label:'Faturamento', data: fatData, backgroundColor:'rgba(64,201,138,0.6)', borderRadius:4, order:2 },
+        { label:'Investimento', data: invData, backgroundColor:'rgba(120,130,143,0.3)', borderRadius:4, order:3 },
+        { label:'ROAS', data: roasData, type:'line', yAxisID:'y1', borderColor:'#a48cf2', borderWidth:2, pointRadius:4, pointBackgroundColor:'#a48cf2', tension:0.3, order:1 }
       ]
     },
     options: {
-      responsive:true,
-      plugins:{legend:{labels:{font:{size:11}}}, tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmtR(c.raw)}`}}},
+      responsive:true, interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{font:{size:11}}}, tooltip:{callbacks:{label:c=> c.dataset.label==='ROAS' ? ` ROAS: ${c.raw.toFixed(2)}x` : ` ${c.dataset.label}: ${fmtR(c.raw)}`}}},
       scales:{
-        x:{ticks:{font:{size:11},color:'#c3cad6'},grid:{display:false}},
-        y:{ticks:{font:{size:10},callback:v=>fmtR(v),maxTicksLimit:6},grid:{color:'rgba(255,255,255,0.04)'},border:{display:false}}
+        x:{ticks:{font:{size:11},color:'var(--text)'},grid:{display:false}},
+        y:{ticks:{font:{size:10},callback:v=>fmtR(v),maxTicksLimit:5},grid:{color:'rgba(255,255,255,0.04)'},border:{display:false}},
+        y1:{position:'right',ticks:{font:{size:10},color:'#a48cf2',callback:v=>v.toFixed(1)+'x'},grid:{drawOnChartArea:false},border:{display:false}}
       }
     }
   });
+  // Summary cards
+  const container = document.getElementById('monthSummaryCards');
+  if (!container) return;
+  const colors = ['var(--pos)','var(--c-meta)','var(--c-tg)','var(--gold)'];
+  container.innerHTML = allMonths.map((m, i) => {
+    const d = months[m];
+    if (!d || d.fat === 0) return `<div style="background:var(--surface-2);border-radius:8px;padding:10px;border-left:3px solid var(--faint);opacity:0.4"><div style="font-size:10px;color:var(--faint);text-transform:uppercase;font-weight:650">${labels[i]}</div><div style="font-size:11px;color:var(--faint);margin-top:4px">Aguardando dados</div></div>`;
+    const roas = d.invest > 0 ? (d.fat / d.invest).toFixed(2) + '\u00d7' : '\u2014';
+    return `<div style="background:var(--surface-2);border-radius:8px;padding:10px;border-left:3px solid ${colors[i]}">
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:650;margin-bottom:4px">${labels[i]}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px" class="num">
+        <div><div style="font-size:8px;color:var(--faint);text-transform:uppercase">Fat.</div><div style="font-size:13px;font-weight:700;color:var(--text-hi)">${fmtR(d.fat)}</div></div>
+        <div><div style="font-size:8px;color:var(--faint);text-transform:uppercase">Vendas</div><div style="font-size:13px;font-weight:700;color:var(--text-hi)">${fmt(d.vendas)}</div></div>
+        <div><div style="font-size:8px;color:var(--faint);text-transform:uppercase">Invest.</div><div style="font-size:13px;font-weight:700;color:var(--text-hi)">${fmtR(d.invest)}</div></div>
+        <div><div style="font-size:8px;color:var(--faint);text-transform:uppercase">ROAS</div><div style="font-size:13px;font-weight:700;color:${d.invest>0 && d.fat/d.invest>=3?'var(--pos)':'var(--warn)'}">${roas}</div></div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 let chartV25inst, chartV26inst;
