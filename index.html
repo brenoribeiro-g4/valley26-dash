@@ -1656,8 +1656,8 @@ function updateV25V26() {
   const v26Summary = DATA.v26_summary || {};
   const baseQualV26 = v26Summary.base_qual_abc || 0;
   const cpaqV26 = baseQualV26 > 0 && V26.invest > 0 ? V26.invest / baseQualV26 : 0;
-  if (el("v26-qual")) el("v26-qual").textContent = baseQualV26 > 0 ? fmt(baseQualV26) : "u2014";
-  if (el("v26-cpaq")) el("v26-cpaq").textContent = cpaqV26 > 0 ? fmtR(cpaqV26) : "u2014";
+  if (el("v26-qual")) el("v26-qual").textContent = baseQualV26 > 0 ? fmt(baseQualV26) : "—";
+  if (el("v26-cpaq")) el("v26-cpaq").textContent = cpaqV26 > 0 ? fmtR(cpaqV26) : "—";
 
   // V25 DOM cards
   const v25Data = DATA.v25_lote01 || {};
@@ -1670,11 +1670,16 @@ function updateV25V26() {
   if (el("v25-vendas")) el("v25-vendas").textContent = fmt(V25.vendas);
   if (el("v25-ticket")) el("v25-ticket").textContent = fmtR(V25.ticket);
   if (el("v25-invest")) el("v25-invest").textContent = fmtR(V25.invest);
-  if (el("v25-cpa")) el("v25-cpa").textContent = V25.cpa > 0 ? fmtR(V25.cpa) : "u2014";
-  if (el("v25-roas")) el("v25-roas").textContent = V25.roas > 0 ? fmtRoas(V25.roas) : "u2014";
+  if (el("v25-cpa")) el("v25-cpa").textContent = V25.cpa > 0 ? fmtR(V25.cpa) : "—";
+  if (el("v25-roas")) el("v25-roas").textContent = V25.roas > 0 ? fmtRoas(V25.roas) : "—";
   if (el("v25-qual")) el("v25-qual").textContent = fmt(baseQualV25);
-  if (el("v25-cpaq")) el("v25-cpaq").textContent = cpaqV25 > 0 ? fmtR(cpaqV25) : "u2014";
+  if (el("v25-cpaq")) el("v25-cpaq").textContent = cpaqV25 > 0 ? fmtR(cpaqV25) : "—";
 
+
+  buildCompDeltaStrip();
+  buildCompCharts();
+  buildMoMChart();
+}
 // Dados reais Valley 2025 - compradores de ingressos por canal (Databricks: vw_mart_eventos_orders)
 const BENCH_V25 = [
   {canal:'Facebook (Meta Ads)', color:'var(--c-meta)', vendas:6001, receita:2056904, ticket:343},
