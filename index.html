@@ -1628,11 +1628,11 @@ function setBenchFilter(ch, btn) {
 function buildCompDeltaStrip() {
   // Comparação normalizada por dia de campanha (V25 = 28 dias, V26 parcial)
   const metrics = [
+    { label:'Investimento', v25: V25.invest, v26: V26.invest, fmt: fmtR, better:'neutral' },
     { label:'Faturamento', v25: V25.fat, v26: V26.fat, fmt: fmtR, better:'up' },
     { label:'Vendas', v25: V25.vendas, v26: V26.vendas, fmt: fmt, better:'up' },
-    { label:'Ticket Médio', v25: V25.ticket, v26: V26.ticket, fmt: fmtR, better:'up' },
-    { label:'Investimento', v25: V25.invest, v26: V26.invest, fmt: fmtR, better:'neutral' },
     { label:'CPA', v25: V25.cpa, v26: V26.cpa, fmt: fmtR, better:'down' },
+    { label:'Ticket Médio', v25: V25.ticket, v26: V26.ticket, fmt: fmtR, better:'up' },
     { label:'ROAS', v25: V25.roas, v26: V26.roas, fmt: fmtRoas, better:'up' },
   ];
   document.getElementById('compDeltaStrip').innerHTML = metrics.map(m => {
