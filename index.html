@@ -872,6 +872,7 @@ td:first-child { text-align: left; }
         <table id="tableCampaigns">
           <thead><tr>
             <th>Campanha</th>
+            <th style="text-align:left">Ad Set Name</th>
             <th style="text-align:left">Ad Name</th>
             <th>Investimento</th>
             <th>CTR</th>
@@ -1895,23 +1896,25 @@ let currentAdsPlatform = 'all';
 let selectedAdNames = [];
 let allAdNameOptions = [];
 
+function detectPlatform(r) {
+  if (r.platform) return r.platform;
+  if ((r.campaign || '').includes('_adsgg_')) return 'google';
+  return 'meta';
+}
+
 function buildAdsFilterOptions(rawData, platform) {
-  // Get unique ad_names for the current platform filter
   let filtered = rawData;
-  if (platform !== 'all') {
-    if (platform === 'meta') filtered = rawData.filter(r => (r.campaign || '').includes('_adsfb_'));
-    else if (platform === 'google') filtered = rawData.filter(r => (r.campaign || '').includes('_adsgg_'));
-    else if (platform === 'youtube') filtered = rawData.filter(r => r.platform === 'youtube');
-  }
+  if (platform !== 'all') filtered = rawData.filter(r => detectPlatform(r) === platform);
   allAdNameOptions = [...new Set(filtered.map(r => r.ad_name || '').filter(Boolean))].sort();
   renderAdsPills();
 }
 
 function renderAdsPills() {
   const container = document.getElementById('adsFilterPills');
-  container.innerHTML = selectedAdNames.map(name =>
-    `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:var(--c-meta);color:#fff;font-size:10px;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis" title="${name}">${name.substring(0,30)} <span onclick="removeAdFilter('${name.replace(/'/g,"\\'")}')" style="cursor:pointer;font-weight:bold">×</span></span>`
-  ).join('');
+  container.innerHTML = selectedAdNames.map((name, i) => {
+    const short = name.length > 35 ? name.substring(0,35) + '…' : name;
+    return `<span class="ad-filter-pill" data-idx="${i}" title="${name.replace(/"/g,'&quot;')}" style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:var(--c-meta);color:#fff;font-size:10px;cursor:default">${short} <span onclick="removeAdFilterIdx(${i})" style="cursor:pointer;font-weight:bold;margin-left:2px">×</span></span>`;
+  }).join('');
 }
 
 function filterAdsDropdown() {
@@ -1928,21 +1931,23 @@ function filterAdsDropdown() {
 
   if (matches.length === 0) { dropdown.style.display = 'none'; return; }
 
-  list.innerHTML = matches.map(name =>
-    `<div onclick="addAdFilter('${name.replace(/'/g,"\\'")}')" style="padding:6px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${name}">${name}</div>`
-  ).join('');
+  list.innerHTML = matches.map((name, i) => {
+    const escaped = name.replace(/"/g,'&quot;');
+    return `<div data-adname="${escaped}" onclick="addAdFilterFromEl(this)" style="padding:6px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escaped}">${name}</div>`;
+  }).join('');
   dropdown.style.display = 'block';
 }
 
-function addAdFilter(name) {
-  if (!selectedAdNames.includes(name)) selectedAdNames.push(name);
+function addAdFilterFromEl(el) {
+  const name = el.getAttribute('data-adname').replace(/&quot;/g,'"');
+  if (name && !selectedAdNames.includes(name)) selectedAdNames.push(name);
   document.getElementById('adsFilterInput').value = '';
   document.getElementById('adsFilterDropdown').style.display = 'none';
   buildPage3();
 }
 
-function removeAdFilter(name) {
-  selectedAdNames = selectedAdNames.filter(n => n !== name);
+function removeAdFilterIdx(idx) {
+  selectedAdNames.splice(idx, 1);
   buildPage3();
 }
 
@@ -2078,17 +2083,11 @@ function buildPage3() {
 
   // ─── Campaign table — filter by platform + fix vendas dedup ───
   const useReal = !!(DATA.ads_report && DATA.ads_report.length > 0);
-  let adsData = useReal ? DATA.ads_report : ADS_MOCK_CAMPAIGNS;
+  let adsData = useReal ? [...DATA.ads_report] : [...ADS_MOCK_CAMPAIGNS];
 
   // Filter by platform
-  if (useReal && platform !== 'all') {
-    if (platform === 'meta') {
-      adsData = adsData.filter(r => (r.platform || 'meta') === 'meta' || (r.campaign && r.campaign.includes('_adsfb_')));
-    } else if (platform === 'google') {
-      adsData = adsData.filter(r => r.platform === 'google' || (r.campaign && r.campaign.includes('_adsgg_')));
-    } else if (platform === 'youtube') {
-      adsData = adsData.filter(r => r.platform === 'youtube');
-    }
+  if (platform !== 'all') {
+    adsData = adsData.filter(r => detectPlatform(r) === platform);
   }
 
   // Fix vendas duplication: distribute proportionally by invest within same ad_name
@@ -2112,16 +2111,27 @@ function buildPage3() {
     adsData = adsData.filter(r => selectedAdNames.includes(r.ad_name || ''));
   }
 
-  // Populate Ad Name filter dropdown options
+  // Populate Ad Name filter dropdown options (from full dataset for current platform)
   buildAdsFilterOptions(useReal ? DATA.ads_report : ADS_MOCK_CAMPAIGNS, platform);
 
   const tbodyC = document.getElementById('tbodyCampaigns');
   tbodyC.innerHTML = '';
+
+  if (adsData.length === 0) {
+    tbodyC.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--faint);padding:20px">Sem dados de campanhas para esta plataforma</td></tr>';
+    document.getElementById('tag-campaigns').textContent = '0 linhas';
+    // Still render empty ad table
+    const tbodyA2 = document.getElementById('tbodyAds');
+    tbodyA2.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--faint);padding:20px">Sem dados de anúncios para esta plataforma</td></tr>';
+    return;
+  }
+
   const maxInvest = Math.max(...adsData.map(r => r.invest || 0), 1);
   const maxFat = Math.max(...adsData.map(r => r.fat_adj || r.fat || 0), 1);
 
   adsData.forEach(row => {
     const campaign = row.campaign || '—';
+    const adsetName = row.adset_name || row.adset_id || '—';
     const adName = row.ad_name || '—';
     const invest = row.invest || 0;
     const ctr = row.ctr || 0;
@@ -2131,8 +2141,9 @@ function buildPage3() {
     const roas = invest > 0 ? fat / invest : 0;
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td style="font-size:11px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${campaign}">${campaign}</td>
-      <td style="font-size:11px;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${adName}">${adName}</td>
+      <td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${campaign}">${campaign}</td>
+      <td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left" title="${adsetName}">${adsetName}</td>
+      <td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left" title="${adName}">${adName}</td>
       <td style="background:${heat(invest, maxInvest, RGB.blue)};color:var(--text-hi);font-weight:600">${fmtR(invest)}</td>
       <td style="background:${heat(ctr, 5, RGB.purple)}">${ctr.toFixed(2)}%</td>
       <td style="background:${heat(vendas, 3, RGB.purple)};color:${vendas>0?'var(--text-hi)':'var(--faint)'}">${vendas > 0 ? vendas.toFixed(1) : '—'}</td>
@@ -2145,15 +2156,15 @@ function buildPage3() {
   const totC = adsData.reduce((s,r) => ({invest:s.invest+(r.invest||0), vendas:s.vendas+(useReal?(r.vendas_adj||0):(r.vendas||0)), fat:s.fat+(useReal?(r.fat_adj||0):(r.fat||0))}), {invest:0,vendas:0,fat:0});
   const trTC = document.createElement('tr');
   trTC.classList.add('total-row');
-  trTC.innerHTML = `<td colspan="2">Total geral</td><td>${fmtR(totC.invest)}</td><td></td><td>${totC.vendas > 0 ? totC.vendas.toFixed(1) : '—'}</td><td>${totC.vendas>0?fmtR(totC.invest/totC.vendas):'—'}</td><td style="color:var(--pos)">${fmtR(totC.fat)}</td><td>${totC.invest>0?(totC.fat/totC.invest).toFixed(2):'—'}</td>`;
+  trTC.innerHTML = `<td colspan="3">Total geral</td><td>${fmtR(totC.invest)}</td><td></td><td>${totC.vendas > 0 ? totC.vendas.toFixed(1) : '—'}</td><td>${totC.vendas>0?fmtR(totC.invest/totC.vendas):'—'}</td><td style="color:var(--pos)">${fmtR(totC.fat)}</td><td>${totC.invest>0?(totC.fat/totC.invest).toFixed(2):'—'}</td>`;
   tbodyC.appendChild(trTC);
   document.getElementById('tag-campaigns').textContent = adsData.length + ' linhas' + (useReal ? '' : ' · mock');
 
-  // ─── Ad detail table (same real data, grouped by ad_name) ───
+  // ─── Ad detail table (grouped by ad_name, same platform/filter) ───
   const tbodyA = document.getElementById('tbodyAds');
   tbodyA.innerHTML = '';
-  if (useReal) {
-    // Group by ad_name to get ad-level view
+  if (useReal && adsData.length > 0) {
+    // Group by ad_name — use vendas_adj for correct totals
     const adMap = {};
     adsData.forEach(row => {
       const name = row.ad_name || row.campaign || '—';
@@ -2161,8 +2172,8 @@ function buildPage3() {
       adMap[name].invest += row.invest || 0;
       adMap[name].clicks += row.clicks || 0;
       adMap[name].impressoes += row.impressoes || 0;
-      adMap[name].vendas += row.vendas || 0;
-      adMap[name].fat += row.fat || 0;
+      adMap[name].vendas += row.vendas_adj || 0;
+      adMap[name].fat += row.fat_adj || 0;
     });
     const adRows = Object.values(adMap).sort((a,b) => b.invest - a.invest);
     const maxInvA = Math.max(...adRows.map(r => r.invest), 1);
@@ -2177,7 +2188,7 @@ function buildPage3() {
         <td style="font-size:11px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${row.name}"><span style="color:var(--c-meta);font-weight:600">${row.name.substring(0,60)}</span></td>
         <td style="background:${heat(row.invest, maxInvA, RGB.blue)};color:var(--text-hi);font-weight:600">${fmtR(row.invest)}</td>
         <td style="background:${heat(ctr, 5, RGB.purple)}">${ctr.toFixed(2)}%</td>
-        <td style="background:${heat(row.vendas, 3, RGB.purple)};color:${row.vendas>0?'var(--text-hi)':'var(--faint)'}">${row.vendas || '—'}</td>
+        <td style="background:${heat(row.vendas, 3, RGB.purple)};color:${row.vendas>0?'var(--text-hi)':'var(--faint)'}">${row.vendas > 0 ? row.vendas.toFixed(1) : '—'}</td>
         <td>—</td>
         <td>—</td>
         <td>${ticket > 0 ? fmtR(ticket) : '<span class="muted-val">—</span>'}</td>
@@ -2189,9 +2200,9 @@ function buildPage3() {
     const totA = adRows.reduce((s,r) => ({invest:s.invest+r.invest, vendas:s.vendas+r.vendas, fat:s.fat+r.fat}), {invest:0,vendas:0,fat:0});
     const trTA = document.createElement('tr');
     trTA.classList.add('total-row');
-    trTA.innerHTML = `<td>Total geral</td><td>${fmtR(totA.invest)}</td><td></td><td>${totA.vendas}</td><td></td><td></td><td></td><td></td><td></td><td>${totA.invest>0?(totA.fat/totA.invest).toFixed(2):'—'}</td>`;
+    trTA.innerHTML = `<td>Total geral</td><td>${fmtR(totA.invest)}</td><td></td><td>${totA.vendas > 0 ? totA.vendas.toFixed(1) : '—'}</td><td></td><td></td><td></td><td></td><td></td><td>${totA.invest>0?(totA.fat/totA.invest).toFixed(2):'—'}</td>`;
     tbodyA.appendChild(trTA);
-  } else {
+  } else if (!useReal) {
     // Fallback mock
     const maxInvestA = Math.max(...ADS_MOCK_ADS.map(r => r.invest));
     const maxHook = Math.max(...ADS_MOCK_ADS.map(r => r.hookRate));
@@ -2215,6 +2226,9 @@ function buildPage3() {
     trTA.classList.add('total-row');
     trTA.innerHTML = `<td>Total geral</td><td>${fmtR(totA.invest)}</td><td></td><td>${totA.vendas}</td><td></td><td></td><td></td><td></td><td></td><td></td>`;
     tbodyA.appendChild(trTA);
+  } else {
+    // No data for this platform
+    tbodyA.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--faint);padding:20px">Sem dados de anúncios para esta plataforma</td></tr>';
   }
 }
 

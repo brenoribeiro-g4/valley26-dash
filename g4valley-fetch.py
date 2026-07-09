@@ -240,24 +240,34 @@ def fetch_marketing_totals():
 
 
 def fetch_ads_report():
-    """Full ads report: metrics from marketing_fct + sales from orders via utm_content match."""
+    """Full ads report: metrics from marketing_fct + sales from orders via utm_content match.
+    Includes both Meta (facebook) and Google ads campaigns."""
     sql = f"""
     WITH ads_metrics AS (
         SELECT
-            a.ad_name,
+            COALESCE(a.ad_name, CONCAT('ad_', m.ad_id)) as ad_name,
+            COALESCE(a.adset_name, CONCAT('adset_', m.adset_id)) as adset_name,
             LEFT(m.utm_campaign, 100) as campaign,
             m.adset_id,
             m.ad_id,
+            CASE
+                WHEN LOWER(m.utm_campaign) LIKE '%_adsfb_%' THEN 'meta'
+                WHEN LOWER(m.utm_campaign) LIKE '%_adsgg_%' THEN 'google'
+                ELSE 'other'
+            END as platform,
             ROUND(SUM(CASE WHEN m.event='investimento' THEN m.event_value ELSE 0 END), 2) as invest,
             ROUND(SUM(CASE WHEN m.event='clicks' THEN m.event_value ELSE 0 END), 0) as clicks,
             ROUND(SUM(CASE WHEN m.event='impressoes' THEN m.event_value ELSE 0 END), 0) as impressoes,
             ROUND(SUM(CASE WHEN m.event='reach' THEN m.event_value ELSE 0 END), 0) as reach
         FROM production.gold.marketing_fct m
         LEFT JOIN production.gold.ads_details a ON m.ad_id = a.ad_id
-        WHERE LOWER(m.utm_campaign) LIKE '%_adsfb_gtm_g4valley26_vendas_carrinhoaberto_alwayson%'
+        WHERE (
+            LOWER(m.utm_campaign) LIKE '%_adsfb_gtm_g4valley26_vendas_carrinhoaberto_alwayson%'
+            OR LOWER(m.utm_campaign) LIKE '%_adsgg_gtm_g4valley26_carrinhoaberto_vendas_%'
+        )
           AND m.event_at >= '{LOTE_START}'
           AND m.event_at <= '{LOTE_END}'
-        GROUP BY 1, 2, 3, 4
+        GROUP BY 1, 2, 3, 4, 5, 6
     ),
     vendas AS (
         SELECT
@@ -268,14 +278,16 @@ def fetch_ads_report():
         WHERE edicao_do_evento = '{EDITION}'
           AND dt_event >= '{LOTE_START}'
           AND dt_event <= '{LOTE_END}'
-          AND utm_source = 'facebook'
+          AND (utm_source = 'facebook' OR utm_source = 'google')
         GROUP BY 1
     )
     SELECT
         am.ad_name,
+        am.adset_name,
         am.campaign,
         am.adset_id,
         am.ad_id,
+        am.platform,
         am.invest,
         am.clicks,
         am.impressoes,
@@ -514,17 +526,19 @@ def build_json():
     for row in ads_raw:
         ads_report.append({
             "ad_name": row[0] or "",
-            "campaign": row[1] or "",
-            "adset_id": row[2] or "",
-            "ad_id": row[3] or "",
-            "invest": float(row[4] or 0),
-            "clicks": int(float(row[5] or 0)),
-            "impressoes": int(float(row[6] or 0)),
-            "ctr": float(row[7] or 0),
-            "vendas": int(row[8] or 0),
-            "fat": float(row[9] or 0),
-            "cpa": float(row[10] or 0),
-            "roas": float(row[11] or 0)
+            "adset_name": row[1] or "",
+            "campaign": row[2] or "",
+            "adset_id": row[3] or "",
+            "ad_id": row[4] or "",
+            "platform": row[5] or "meta",
+            "invest": float(row[6] or 0),
+            "clicks": int(float(row[7] or 0)),
+            "impressoes": int(float(row[8] or 0)),
+            "ctr": float(row[9] or 0),
+            "vendas": int(row[10] or 0),
+            "fat": float(row[11] or 0),
+            "cpa": float(row[12] or 0),
+            "roas": float(row[13] or 0)
         })
 
     # 9. Leads

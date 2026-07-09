@@ -233,10 +233,16 @@ def build_data(start, end):
     ads_rows = run_query(f"""
     WITH ads_metrics AS (
         SELECT
-            a.ad_name,
+            COALESCE(a.ad_name, CONCAT('ad_', m.ad_id)) as ad_name,
+            COALESCE(a.adset_name, CONCAT('adset_', m.adset_id)) as adset_name,
             LEFT(m.utm_campaign, 100) as campaign,
             m.adset_id,
             m.ad_id,
+            CASE
+                WHEN LOWER(m.utm_campaign) LIKE '%_adsfb_%' THEN 'meta'
+                WHEN LOWER(m.utm_campaign) LIKE '%_adsgg_%' THEN 'google'
+                ELSE 'other'
+            END as platform,
             ROUND(SUM(CASE WHEN m.event='investimento' THEN m.event_value ELSE 0 END), 2) as invest,
             ROUND(SUM(CASE WHEN m.event='clicks' THEN m.event_value ELSE 0 END), 0) as clicks,
             ROUND(SUM(CASE WHEN m.event='impressoes' THEN m.event_value ELSE 0 END), 0) as impressoes,
@@ -247,7 +253,7 @@ def build_data(start, end):
                OR LOWER(m.utm_campaign) LIKE '%_adsgg_gtm_g4valley26_carrinhoaberto_vendas_%')
           AND m.event_at >= '{start}'
           AND m.event_at <= '{end}'
-        GROUP BY 1, 2, 3, 4
+        GROUP BY 1, 2, 3, 4, 5, 6
     ),
     vendas AS (
         SELECT
@@ -262,7 +268,7 @@ def build_data(start, end):
         GROUP BY 1
     )
     SELECT
-        am.ad_name, am.campaign, am.adset_id, am.ad_id,
+        am.ad_name, am.adset_name, am.campaign, am.adset_id, am.ad_id, am.platform,
         am.invest, am.clicks, am.impressoes,
         ROUND(am.clicks / NULLIF(am.impressoes, 0) * 100, 2) as ctr,
         COALESCE(v.vendas, 0) as vendas,
@@ -277,17 +283,19 @@ def build_data(start, end):
     for r in (ads_rows or []):
         ads_report.append({
             "ad_name": r[0] or "",
-            "campaign": r[1] or "",
-            "adset_id": r[2] or "",
-            "ad_id": r[3] or "",
-            "invest": float(r[4] or 0),
-            "clicks": int(r[5] or 0),
-            "impressoes": int(r[6] or 0),
-            "ctr": float(r[7] or 0),
-            "vendas": int(r[8] or 0),
-            "fat": float(r[9] or 0),
-            "cpa": float(r[10] or 0),
-            "roas": float(r[11] or 0)
+            "adset_name": r[1] or "",
+            "campaign": r[2] or "",
+            "adset_id": r[3] or "",
+            "ad_id": r[4] or "",
+            "platform": r[5] or "meta",
+            "invest": float(r[6] or 0),
+            "clicks": int(r[7] or 0),
+            "impressoes": int(r[8] or 0),
+            "ctr": float(r[9] or 0),
+            "vendas": int(r[10] or 0),
+            "fat": float(r[11] or 0),
+            "cpa": float(r[12] or 0),
+            "roas": float(r[13] or 0)
         })
 
     return {
