@@ -234,7 +234,7 @@ def build_data(start, end):
     WITH ads_metrics AS (
         SELECT
             COALESCE(a.ad_name, CONCAT('ad_', m.ad_id)) as ad_name,
-            COALESCE(a.adset_name, CONCAT('adset_', m.adset_id)) as adset_name,
+            COALESCE(m.adset_id, '') as adset_name,
             LEFT(m.utm_campaign, 100) as campaign,
             m.adset_id,
             m.ad_id,
