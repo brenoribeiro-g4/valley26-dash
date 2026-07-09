@@ -1752,7 +1752,9 @@ function buildMoMChart() {
   });
 }
 
+let chartV25inst, chartV26inst;
 function buildCompCharts() {
+  if (!DATA) return;
   const mkOpts = () => ({
     responsive:true, interaction:{mode:'index',intersect:false},
     plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=> c.dataset.label==='ROAS' ? ` ROAS: ${fmtRoas(c.raw)}` : ` ${c.dataset.label}: ${fmtR(c.raw)}`}}},
@@ -1763,33 +1765,40 @@ function buildCompCharts() {
     }
   });
 
-  // V25 — dados históricos finais (perfil de curva ilustrativo)
-  const v25Fat = [38000,42000,35000,28000,31000,26000,33000,36000,30000,29000,32000,35000,27000,31000,33000,30000,34000,32000,36000,28000,30000,33000,35000,31000,29000,34000,38000,46000];
-  const v25Inv = v25Fat.map(f => Math.round(f / 2.83));
-  new Chart(document.getElementById('chartV25').getContext('2d'), {
+  // V25 — dados reais do Databricks (by_day)
+  const v25ByDay = DATA.v25_lote01?.by_day || {};
+  const v25Days = Object.keys(v25ByDay).sort();
+  const v25Fat = v25Days.map(d => v25ByDay[d].fat);
+  const v25Labels = v25Days.map((_,i) => 'D'+(i+1));
+
+  if (chartV25inst) chartV25inst.destroy();
+  chartV25inst = new Chart(document.getElementById('chartV25').getContext('2d'), {
     type: 'bar',
     data: {
-      labels: v25Fat.map((_,i) => 'D'+(i+1)),
+      labels: v25Labels,
       datasets: [
-        { label:'Fat', data: v25Fat, backgroundColor:'rgba(116,170,243,0.55)', borderRadius:2, order:2 },
-        { label:'Invest', data: v25Inv, backgroundColor:'rgba(120,130,143,0.28)', borderRadius:2, order:3 },
-        { label:'ROAS', data: v25Fat.map((f,i) => f / v25Inv[i]), type:'line', yAxisID:'y1', borderColor:'#a48cf2', borderWidth:1.5, pointRadius:0, tension:0.35, order:1 }
+        { label:'Faturamento', data: v25Fat, backgroundColor:'rgba(116,170,243,0.55)', borderRadius:2, order:2 },
       ]
     },
     options: mkOpts()
   });
 
-  // V26 — dados reais do lote (by_day quando disponível)
-  const v26Fat = [54297,52876,38238,16523,27138,37350,45514,33440,20433,21514,34283,32126,30519,16288];
-  const v26Inv = [17291,13914,15244,16158,18850,16405,14088,17031,15467,15252,20258,19805,17729,8630];
-  new Chart(document.getElementById('chartV26').getContext('2d'), {
+  // V26 — dados reais do lote atual
+  const v26ByDay = DATA.by_day || {};
+  const v26Days = Object.keys(v26ByDay).sort();
+  const v26Fat = v26Days.map(d => v26ByDay[d].fat);
+  const v26Inv = v26Days.map(d => v26ByDay[d].invest || 0);
+  const v26Labels = v26Days.map((_,i) => 'D'+(i+1));
+
+  if (chartV26inst) chartV26inst.destroy();
+  chartV26inst = new Chart(document.getElementById('chartV26').getContext('2d'), {
     type: 'bar',
     data: {
-      labels: v26Fat.map((_,i) => 'D'+(i+1)),
+      labels: v26Labels,
       datasets: [
-        { label:'Fat', data: v26Fat, backgroundColor:'rgba(64,201,138,0.55)', borderRadius:2, order:2 },
-        { label:'Invest', data: v26Inv, backgroundColor:'rgba(120,130,143,0.28)', borderRadius:2, order:3 },
-        { label:'ROAS', data: v26Fat.map((f,i) => f / v26Inv[i]), type:'line', yAxisID:'y1', borderColor:'#a48cf2', borderWidth:1.5, pointRadius:0, tension:0.35, order:1 }
+        { label:'Faturamento', data: v26Fat, backgroundColor:'rgba(64,201,138,0.55)', borderRadius:2, order:2 },
+        { label:'Investimento', data: v26Inv, backgroundColor:'rgba(120,130,143,0.28)', borderRadius:2, order:3 },
+        { label:'ROAS', data: v26Fat.map((f,i) => v26Inv[i] > 0 ? f/v26Inv[i] : 0), type:'line', yAxisID:'y1', borderColor:'#a48cf2', borderWidth:1.5, pointRadius:2, tension:0.35, order:1 }
       ]
     },
     options: mkOpts()
