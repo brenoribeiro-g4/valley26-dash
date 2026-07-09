@@ -705,7 +705,7 @@ td:first-child { text-align: left; }
     <!-- ─── BENCHMARK RPL ─── -->
     <div class="section-header">
       <div class="section-label">RPL Valley 2025 — Receita por Lead por Canal</div>
-      <div class="section-desc">Benchmark histórico · base para projeções do Valley 2026 · First Click</div>
+      <div class="section-desc">Compradores de ingressos Valley 2025 por canal · vendas reais · ticket médio</div>
     </div>
     <div class="table-card">
       <div class="card-header" style="margin-bottom:10px">
@@ -733,9 +733,9 @@ td:first-child { text-align: left; }
         <table>
           <thead><tr>
             <th>Canal</th>
-            <th>Leads</th>
+            <th>Vendas</th>
             <th>Receita</th>
-            <th>RPL</th>
+            <th>Ticket Médio</th>
             <th>% da Receita</th>
           </tr></thead>
           <tbody id="tbodyBench"></tbody>
@@ -1619,21 +1619,19 @@ function updateV25V26() {
   buildCompCharts();
 }
 
+// Dados reais Valley 2025 - compradores de ingressos por canal (Databricks: vw_mart_eventos_orders)
 const BENCH_V25 = [
-  {canal:'Meta Ads', color:CH_COLOR.meta, leads:38324, receita:2812759, rpl:73},
-  {canal:'Email CRM (Geral)', color:CH_COLOR.email, leads:18856, receita:2191229, rpl:116},
-  {canal:'WPP One Click CRM', color:CH_COLOR.wppoc, leads:45777, receita:1834545, rpl:40},
-  {canal:'Take WPP CRM', color:CH_COLOR.take, leads:4207, receita:225932, rpl:54},
-  {canal:'Grupos WhatsApp', color:CH_COLOR.grupos, leads:3738, receita:852126, rpl:228},
-  {canal:'TG Social', color:CH_COLOR.tg, leads:4774, receita:648218, rpl:136},
-  {canal:'Alfredo Social', color:CH_COLOR.alf, leads:2421, receita:276566, rpl:114},
-  {canal:'G4 Social', color:CH_COLOR.g4s, leads:5553, receita:576611, rpl:104},
-  {canal:'Nardon Social', color:CH_COLOR.nar, leads:737, receita:115401, rpl:157},
-  {canal:'PQL', color:CH_COLOR.pql, leads:1538, receita:436107, rpl:284},
-  {canal:'Google', color:CH_COLOR.google, leads:1057, receita:84113, rpl:80},
-  {canal:'Indicação', color:CH_COLOR.indicacao, leads:4343, receita:115519, rpl:27},
-  {canal:'YouTube Ads', color:CH_COLOR.youtube, leads:498, receita:26302, rpl:53},
-  {canal:'Website SEO', color:CH_COLOR.website, leads:648, receita:243734, rpl:376},
+  {canal:'Facebook (Meta Ads)', color:'var(--c-meta)', vendas:6001, receita:2056904, ticket:343},
+  {canal:'HubSpot', color:'var(--c-wppoc)', vendas:2812, receita:1619772, ticket:576},
+  {canal:'Instagram', color:'var(--c-g4s)', vendas:1535, receita:833321, ticket:543},
+  {canal:'WhatsApp', color:'var(--c-grupos)', vendas:1015, receita:788889, ticket:777},
+  {canal:'Google', color:'var(--c-google)', vendas:398, receita:676934, ticket:1701},
+  {canal:'Website SEO', color:'var(--c-website,#a3e635)', vendas:203, receita:380125, ticket:1873},
+  {canal:'Suporte', color:'var(--faint)', vendas:89, receita:233460, ticket:2623},
+  {canal:'Indica\u00e7\u00e3o', color:'var(--c-indicacao,#f472b6)', vendas:219, receita:218915, ticket:1000},
+  {canal:'PQL', color:'var(--c-pql,#38bdf8)', vendas:138, receita:148372, ticket:1075},
+  {canal:'YouTube Ads', color:'var(--c-youtube)', vendas:231, receita:23410, ticket:101},
+  {canal:'N\u00e3o-definido', color:'var(--faint)', vendas:1640, receita:3755100, ticket:2290},
 ];
 
 let benchFilter = 'all';
@@ -1674,7 +1672,7 @@ function buildBenchTable() {
   const tbody = document.getElementById('tbodyBench');
   tbody.innerHTML = '';
   const totalReceita = BENCH_V25.reduce((s, r) => s + r.receita, 0);
-  const totalLeads = BENCH_V25.reduce((s, r) => s + r.leads, 0);
+  const totalVendas25 = BENCH_V25.reduce((s, r) => s + r.vendas, 0);
   const rows = benchFilter === 'all' ? BENCH_V25 : BENCH_V25.filter(r => r.canal === benchFilter);
   const maxReceita = Math.max(...BENCH_V25.map(r => r.receita));
 
@@ -1684,9 +1682,9 @@ function buildBenchTable() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><span class="goal-name"><span class="dot" style="background:${row.color}"></span>${row.canal}</span></td>
-      <td>${fmt(row.leads)}</td>
+      <td>${fmt(row.vendas)}</td>
       <td style="color:var(--text-hi);font-weight:600">${fmtR(row.receita)}</td>
-      <td style="color:var(--gold);font-weight:700">R$ ${row.rpl}</td>
+      <td style="color:var(--gold);font-weight:700">${fmtR(row.ticket)}</td>
       <td><div class="inline-bar"><div class="ib-track"><div class="ib-fill" style="width:${barW}%;background:${row.color}"></div></div><span class="ib-pct">${pct.toFixed(1)}%</span></div></td>`;
     tbody.appendChild(tr);
   });
@@ -1694,7 +1692,8 @@ function buildBenchTable() {
   if (benchFilter === 'all') {
     const trT = document.createElement('tr');
     trT.classList.add('total-row');
-    trT.innerHTML = `<td>TOTAL</td><td>${fmt(totalLeads)}</td><td>${fmtR(totalReceita)}</td><td style="color:var(--gold)">R$ ${(totalReceita/totalLeads).toFixed(0)}</td><td></td>`;
+    const ticketGeral = totalVendas25 > 0 ? totalReceita / totalVendas25 : 0;
+    trT.innerHTML = `<td>TOTAL</td><td>${fmt(totalVendas25)}</td><td>${fmtR(totalReceita)}</td><td style="color:var(--gold)">${fmtR(ticketGeral)}</td><td></td>`;
     tbody.appendChild(trT);
   }
   document.getElementById('tag-bench-total').textContent = rows.length + (rows.length === 1 ? ' canal' : ' canais');
