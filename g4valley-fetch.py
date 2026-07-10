@@ -569,6 +569,27 @@ def build_json():
             "roas": float(row[13] or 0)
         })
 
+    # 9b. Fetch Instagram permalinks for ads
+    print("  -> instagram permalinks...")
+    permalink_rows = run_query(f"""
+    SELECT DISTINCT a.ad_name,
+        GET_JSON_OBJECT(c.raw_attributes, '$.instagram_permalink_url') as ig_url
+    FROM production.gold.marketing_fct m
+    JOIN production.gold.ads_details a ON m.ad_id = a.ad_id
+    JOIN production.gold.creatives_details c ON m.creative_id = c.creative_id
+    WHERE LOWER(m.utm_campaign) LIKE '%_adsfb_gtm_g4valley26_vendas_carrinhoaberto_alwayson%'
+      AND m.event_at >= '{LOTE_START}'
+      AND GET_JSON_OBJECT(c.raw_attributes, '$.instagram_permalink_url') IS NOT NULL
+    """)
+    permalink_map = {}
+    for r in (permalink_rows or []):
+        if r[0] and r[1]:
+            permalink_map[r[0]] = r[1]
+    for ad in ads_report:
+        if ad['ad_name'] in permalink_map:
+            ad['permalink'] = permalink_map[ad['ad_name']]
+    print(f"    {len(permalink_map)} permalinks found")
+
     # 9. Leads
     print("  -> leads totais + por dia + por canal...")
     leads_total = int(fetch_leads_totais()[0][0])
@@ -681,6 +702,8 @@ def build_json():
             "vendas": v25_vendas,
             "fat": v25_fat,
             "ticket_medio": v25_ticket,
+            "invest": 375279.98,
+            "base_qual_abc": 1595,
             "dias": 25,
             "periodo": "14/08/2025 - 07/09/2025",
             "by_day": v25_by_day
